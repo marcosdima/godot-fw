@@ -112,6 +112,8 @@ An entity that requires state owns a `StateSystem`.
 
 `StateSystem` is independent of the physical representation of an entity or world. It must not depend on 2D, 3D, physics, or a specific entity implementation.
 
+`StateSystem` is tick-based. Its update cycle advances in discrete ticks rather than continuous time.
+
 Conceptually:
 
 ```
@@ -153,7 +155,11 @@ An attribute has a base value and may have modifiers.
 
 The base value should represent the underlying value.
 
-`base_value` represents the original value and is not modified by the state system. `current_value` represents the mutable current state of the attribute. Effects modify `current_value`, while modifiers temporarily affect the effective value without changing `base_value` or permanently changing `current_value`.
+`base_value` represents the original value and is never modified by the state system.
+
+`current_value` represents the mutable current state of the attribute. Effects modify `current_value`.
+
+Modifiers do not modify `current_value` directly. The effective value is calculated separately from `current_value` and the active modifiers.
 
 ## Modifier
 
@@ -218,18 +224,22 @@ Rules primarily operate on condition intensity.
 
 When a condition reaches a state where its intensity is no longer sufficient to remain alive, it should be removed from the state system.
 
-A condition is alive while its intensity is greater than zero. `Condition.is_alive()` encapsulates this check so that `StateSystem` does not need to know how condition lifetime is represented.
+A condition is alive while its intensity is greater than zero. `Condition.is_alive()` is defined as `intensity > 0` and encapsulates this rule so that `StateSystem` does not need to know how condition lifetime is represented. `StateSystem` must use `is_alive()` instead of directly checking intensity.
 
 # Effects
 
-An `Effect` is a data representation of an effect applied at a particular moment.
+An `Effect` is a transient data representation of an effect applied at a particular moment.
 
 It contains information such as:
 
-* target;
+* target identifier;
 * value.
 
 An `Effect` should remain a lightweight data object and should not contain complex behavior.
+
+An `Effect` must not reference an `Attribute`, `Status`, or `Entity`. It only carries the target identifier and the value to apply.
+
+Once processed, an `Effect` does not need to remain registered.
 
 For example:
 
@@ -245,7 +255,13 @@ The concrete meaning of an effect is determined by the system processing it.
 
 `EffectApplication` describes how an effect is generated and applied over time.
 
-It is closely associated with the condition that owns it.
+It is the persistent/process-level abstraction. It can persist across multiple `StateSystem` ticks.
+
+It may belong to a `Condition`, but does not inherently require one. It may also represent an instant effect submitted directly to `EffectHandler`.
+
+Its rate is expressed in `StateSystem` ticks, not seconds.
+
+Do not introduce separate `InstantEffectApplication` / `PersistentEffectApplication` classes. A single `EffectApplication` abstraction covers both cases.
 
 This distinction is intentional:
 
@@ -306,6 +322,18 @@ Handler
 
 Handlers should remain focused on managing their respective data and should not become general-purpose managers.
 
+## EffectHandler
+
+`EffectHandler` remains a `Handler` because it stores active `EffectApplication`s and their processing state.
+
+It processes applications on `StateSystem` ticks.
+
+It generates and processes `Effect`s.
+
+It resolves `Effect` targets through `Status` and applies them to the corresponding `Attribute`s.
+
+Applications associated with a `Condition` are removed when that `Condition` is removed.
+
 # State System Update
 
 The conceptual update order is:
@@ -322,6 +350,13 @@ The conceptual update order is:
 The exact implementation may evolve.
 
 The update system should remain generic and must not contain game-specific condition logic.
+
+## EffectApplication Sources
+
+`EffectApplication`s can originate from two sources:
+
+* **Conditions**, for persistent effects that last as long as the condition is alive.
+* **Direct gameplay actions**, for instant effects submitted directly to `EffectHandler`.
 
 # Rules
 
