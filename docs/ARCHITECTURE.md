@@ -341,11 +341,13 @@ The conceptual update order is:
 ```
 1. Evaluate rules.
 2. Update conditions.
-3. Activate newly active conditions.
-4. Register their effect applications.
-5. Apply effects according to their applications.
-6. Remove conditions that are no longer alive.
+3. Remove conditions that are no longer alive, together with their registered effect applications.
+4. Activate newly active conditions.
+5. Register their effect applications.
+6. Apply effects according to their applications.
 ```
+
+Conditions brought to a dead state by rules exit the circuit at step 3, before their effect applications are processed in that same tick.
 
 The exact implementation may evolve.
 
@@ -383,13 +385,55 @@ presence = Wet
 factor = 0.5
 ```
 
-The rule may reduce the target condition's intensity.
+## Scope
 
-Rules primarily operate on condition intensity.
+Rules operate at the `StateSystem` level.
 
-The concrete rules used by a game belong to `game`.
+A `StateSystem` may have its own rules, specific to that entity.
 
-The rule infrastructure belongs to `core`.
+The `World` may eventually define a set of general rules applicable to StateSystems. See Future.
+
+Rules must not depend on `Entity` or `World`.
+
+## Rule Inputs
+
+Rules operate only on Conditions.
+
+They do not operate on Attributes or Effects.
+
+Effects are transient results and do not independently represent state to react to.
+
+## Rule Effects
+
+For the initial implementation, rules may modify only `Condition.intensity`.
+
+Rules do not directly modify the `ConditionHandler`. The `StateSystem` evaluates rules and performs the necessary structural changes through the `ConditionHandler`.
+
+Reducing a condition's intensity to zero or below is the mechanism for removing it. A rule that cancels a condition this way is a valid rule concept.
+
+When a rule brings a condition to an intensity that is no longer alive, that condition and its effect applications leave the circuit before effect applications are processed in that same tick.
+
+## Evaluation
+
+The `StateSystem` evaluates rules sequentially, in priority order.
+
+Each rule receives the current conditions and may modify their intensity directly.
+
+Rules evaluated later observe modifications made by rules evaluated earlier.
+
+## Priority
+
+Rules have an integer priority. Higher numeric priority executes first.
+
+Ordering is deterministic and shared by all StateSystems. Rules with equal priority are ordered by ascending identifier.
+
+Registration order must not affect evaluation order.
+
+## Ownership
+
+The rule infrastructure (`Rule`, `RuleHandler`) belongs to `core`.
+
+Concrete rules belong to `game`.
 
 # World
 
@@ -507,3 +551,12 @@ Do not introduce:
 unless there is a concrete architectural reason.
 
 If a requirement cannot be cleanly implemented using the current architecture, the preferred behavior is to propose alternatives and discuss the architectural change before implementing it.
+
+# Future
+
+Deliberately deferred architectural possibilities. Do not implement these until a concrete need appears.
+
+* WorldConfig/World integration with StateSystem rules: automatically supplying world-level rules to StateSystems, if it requires additional coupling. Example: IdleRule(Burn) decreasing Burn intensity over time as a world rule, while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
+* Rules that create Conditions. Example: Wet + Cold -> Sick.
+* Rules affecting Attributes or Effects.
+* Condition/intensity manipulation beyond the current intensity-only model.
