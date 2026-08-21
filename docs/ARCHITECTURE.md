@@ -110,6 +110,8 @@ The system is designed to be composable and should not require every entity to h
 
 An entity that requires state owns a `StateSystem`.
 
+`StateSystem` is independent of the physical representation of an entity or world. It must not depend on 2D, 3D, physics, or a specific entity implementation.
+
 Conceptually:
 
 ```
@@ -151,7 +153,7 @@ An attribute has a base value and may have modifiers.
 
 The base value should represent the underlying value.
 
-Temporary changes should be represented through `Modifier` rather than permanently changing the base value.
+`base_value` represents the original value and is not modified by the state system. `current_value` represents the mutable current state of the attribute. Effects modify `current_value`, while modifiers temporarily affect the effective value without changing `base_value` or permanently changing `current_value`.
 
 ## Modifier
 
@@ -216,7 +218,7 @@ Rules primarily operate on condition intensity.
 
 When a condition reaches a state where its intensity is no longer sufficient to remain alive, it should be removed from the state system.
 
-The exact definition of "alive" belongs to the condition abstraction.
+A condition is alive while its intensity is greater than zero. `Condition.is_alive()` encapsulates this check so that `StateSystem` does not need to know how condition lifetime is represented.
 
 # Effects
 
@@ -398,7 +400,7 @@ The exact relationship between these types and Godot's node classes is still sub
 
 The entity abstraction should not be unnecessarily coupled to 2D.
 
-For example, a concept representing a dynamic entity should not inherently require the name or implementation `DynamicEntity2D` unless the entity is specifically tied to 2D.
+For example, a concept representing a dynamic entity should not inherently require the name or implementation `DynamicEntity2D` unless the entity is specifically tied to 2D; and that is game-specific.
 
 # Signals
 
