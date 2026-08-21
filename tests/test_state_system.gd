@@ -2,8 +2,6 @@ extends GutTest
 
 
 const ConstantApplication := preload("res://tests/helpers/constant_application.gd")
-const WeakenRule := preload("res://tests/helpers/weaken_rule.gd")
-const CancelRule := preload("res://tests/helpers/cancel_rule.gd")
 const ThresholdCancelRule := preload("res://tests/helpers/threshold_cancel_rule.gd")
 
 
