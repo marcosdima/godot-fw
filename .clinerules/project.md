@@ -24,6 +24,16 @@ Do not modify `core` to directly reference a concrete game mechanic.
 
 If a game requirement appears to require a change to `core`, explain the reason and propose the smallest generic abstraction that could support it.
 
+## Folder Organization
+
+Shared core-wide abstractions stay directly under `core/`.
+
+Domain-specific classes belong to their respective domain folder.
+
+Do not create folders solely to group classes by inheritance.
+
+Do not create a generic `handlers/` folder when the handler belongs clearly to a domain.
+
 ## Composition and Inheritance
 
 Prefer composition over inheritance when representing capabilities.
@@ -72,6 +82,8 @@ Use GDScript with explicit type annotations where they improve clarity.
 Use `class_name` when a class is intended to be globally identifiable within the project.
 
 If the class extends another, then first goes `extends ClassA` and below `class_name ClassB`.
+
+When a global class extends another global class, Godot may report `Could not find base class` during parsing because the base class is not yet registered. This is a known parse-order issue and is expected. Ignore this error until all classes are loaded; it resolves once the project is fully scanned.
 
 Use descriptive names.
 
