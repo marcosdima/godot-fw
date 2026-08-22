@@ -16,6 +16,10 @@ The goal is to develop the foundation and a working game template in the same pr
 ```
 project/
 ├── core/
+│   ├── conditions/
+│   ├── effects/
+│   ├── rules/
+│   └── state/
 ├── game/
 ├── docs/
 └── project.godot
@@ -44,7 +48,7 @@ Game-specific implementations belong in `game`.
 Examples:
 
 * Concrete conditions such as `BurnCondition` or `WetCondition`.
-* Game-specific rules.
+* Game-specific rule definitions that bind rules to game conditions, such as `CancelRule(Burn)` or `WeakenRule(Burn, Wet)`.
 * Game-specific effects.
 * Game-specific entities.
 * Game-specific attributes.
@@ -88,6 +92,59 @@ For example, `StateSystem` may manage conditions, effects and rules, but it must
 
 Game-specific behavior must be expressed through the abstractions provided by `core`.
 
+## Identifiers
+
+Game-specific identifiers must not be represented by unexplained numeric literals.
+
+Do not write:
+
+```
+Effect.new(1, -0.5)
+```
+
+when the number represents a game concept.
+
+Game-specific identifiers should be represented using enums.
+
+For example:
+
+```
+enum AttributeId {
+    HEALTH,
+    SPEED,
+    STRENGTH,
+}
+```
+
+Then:
+
+```
+Effect.new(AttributeId.HEALTH, -0.5)
+```
+
+The generic `core` systems may store identifiers without knowing their game-specific meaning.
+
+The concrete meaning of those identifiers belongs to `game`.
+
+Do not introduce string identifiers when an enum is appropriate.
+
+## Prefer the smallest abstraction
+
+When a new requirement appears, prefer the smallest abstraction that solves the problem.
+
+Do not introduce:
+
+* managers;
+* service locators;
+* global event buses;
+* unnecessary interfaces;
+* deep inheritance hierarchies;
+* unnecessary singletons;
+
+unless there is a concrete architectural reason.
+
+If a requirement cannot be cleanly implemented using the current architecture, the preferred behavior is to propose alternatives and discuss the architectural change before implementing it.
+
 # Element
 
 `Element` is the common base abstraction for identifiable elements.
@@ -101,6 +158,45 @@ It provides:
 Elements should share common behavior through this abstraction when appropriate.
 
 Do not add functionality to `Element` merely because multiple classes could theoretically use it.
+
+# Handlers
+
+Handlers provide generic management of collections of `Element` instances.
+
+The base `Handler` provides operations such as:
+
+* add
+* remove
+* lookup by ID
+* contains
+* clear
+* get value
+* set value
+
+Specialized handlers may extend this behavior when domain-specific operations are required.
+
+Examples:
+
+```
+Handler
+├── ConditionHandler
+├── EffectHandler
+└── RuleHandler
+```
+
+Handlers should remain focused on managing their respective data and should not become general-purpose managers.
+
+## EffectHandler
+
+`EffectHandler` remains a `Handler` because it stores active `EffectApplication`s and their processing state.
+
+It processes applications on `StateSystem` ticks.
+
+It generates and processes `Effect`s.
+
+It resolves `Effect` targets through `Status` and applies them to the corresponding `Attribute`s.
+
+Applications associated with a `Condition` are removed when that `Condition` is removed.
 
 # State System
 
@@ -121,7 +217,8 @@ Entity
 └── StateSystem
     ├── Status
     ├── ConditionHandler
-    └── EffectHandler
+    ├── EffectHandler
+    └── RuleHandler
 ```
 
 `StateSystem` should not depend on concrete game-specific types.
@@ -220,8 +317,6 @@ game
 
 Intensity represents the remaining strength/lifetime of a condition.
 
-Rules primarily operate on condition intensity.
-
 When a condition reaches a state where its intensity is no longer sufficient to remain alive, it should be removed from the state system.
 
 A condition is alive while its intensity is greater than zero. `Condition.is_alive()` is defined as `intensity > 0` and encapsulates this rule so that `StateSystem` does not need to know how condition lifetime is represented. `StateSystem` must use `is_alive()` instead of directly checking intensity.
@@ -296,63 +391,6 @@ value = calculated from Burn intensity
 
 Concrete effect applications may belong to `game` when their behavior is game-specific.
 
-# Handlers
-
-Handlers provide generic management of collections of `Element` instances.
-
-The base `Handler` provides operations such as:
-
-* add
-* remove
-* lookup by ID
-* contains
-* clear
-* get value
-* set value
-
-Specialized handlers may extend this behavior when domain-specific operations are required.
-
-Examples:
-
-```
-Handler
-├── ConditionHandler
-└── EffectHandler
-```
-
-Handlers should remain focused on managing their respective data and should not become general-purpose managers.
-
-## EffectHandler
-
-`EffectHandler` remains a `Handler` because it stores active `EffectApplication`s and their processing state.
-
-It processes applications on `StateSystem` ticks.
-
-It generates and processes `Effect`s.
-
-It resolves `Effect` targets through `Status` and applies them to the corresponding `Attribute`s.
-
-Applications associated with a `Condition` are removed when that `Condition` is removed.
-
-# State System Update
-
-The conceptual update order is:
-
-```
-1. Evaluate rules.
-2. Update conditions.
-3. Remove conditions that are no longer alive, together with their registered effect applications.
-4. Activate newly active conditions.
-5. Register their effect applications.
-6. Apply effects according to their applications.
-```
-
-Conditions brought to a dead state by rules exit the circuit at step 3, before their effect applications are processed in that same tick.
-
-The exact implementation may evolve.
-
-The update system should remain generic and must not contain game-specific condition logic.
-
 ## EffectApplication Sources
 
 `EffectApplication`s can originate from two sources:
@@ -405,7 +443,7 @@ Effects are transient results and do not independently represent state to react 
 
 ## Rule Effects
 
-For the initial implementation, rules may modify only `Condition.intensity`.
+Rules primarily operate on condition intensity. For the initial implementation, rules may modify only `Condition.intensity`.
 
 Rules do not directly modify the `ConditionHandler`. The `StateSystem` evaluates rules and performs the necessary structural changes through the `ConditionHandler`.
 
@@ -431,9 +469,30 @@ Registration order must not affect evaluation order.
 
 ## Ownership
 
-The rule infrastructure (`Rule`, `RuleHandler`) belongs to `core`.
+The rule infrastructure (`Rule`, `RuleHandler`) and the generic rule implementations (`IdleRule`, `WeakenRule`, `CancelRule`) belong to `core`.
 
-Concrete rules belong to `game`.
+What belongs to `game` is the definition of the relationships between conditions and rules: binding concrete rules to the game's conditions.
+
+For example, `game` defines that a `CancelRule` targets `Burn`, or that a `WeakenRule` relates `Burn` and `Wet`.
+
+# State System Update
+
+The conceptual update order is:
+
+```
+1. Evaluate rules.
+2. Update conditions.
+3. Remove conditions that are no longer alive, together with their registered effect applications.
+4. Activate newly active conditions.
+5. Register their effect applications.
+6. Apply effects according to their applications.
+```
+
+Conditions brought to a dead state by rules exit the circuit at step 3, before their effect applications are processed in that same tick.
+
+The exact implementation may evolve.
+
+The update system should remain generic and must not contain game-specific condition logic.
 
 # World
 
@@ -501,62 +560,12 @@ Do not introduce a global event bus merely for the sake of having one.
 
 A global event bus may be considered later if a concrete architectural need for decoupled communication appears.
 
-# Identifiers
-
-Game-specific identifiers must not be represented by unexplained numeric literals.
-
-Do not write:
-
-```
-Effect.new(1, -0.5)
-```
-
-when the number represents a game concept.
-
-Game-specific identifiers should be represented using enums.
-
-For example:
-
-```
-enum AttributeId {
-    HEALTH,
-    SPEED,
-    STRENGTH,
-}
-```
-
-Then:
-
-```
-Effect.new(AttributeId.HEALTH, -0.5)
-```
-
-The generic `core` systems may store identifiers without knowing their game-specific meaning.
-
-The concrete meaning of those identifiers belongs to `game`.
-
-# Architectural Decisions
-
-When a new requirement appears, prefer the smallest abstraction that solves the problem.
-
-Do not introduce:
-
-* managers;
-* service locators;
-* global event buses;
-* unnecessary interfaces;
-* deep inheritance hierarchies;
-* unnecessary singletons;
-
-unless there is a concrete architectural reason.
-
-If a requirement cannot be cleanly implemented using the current architecture, the preferred behavior is to propose alternatives and discuss the architectural change before implementing it.
-
 # Future
 
 Deliberately deferred architectural possibilities. Do not implement these until a concrete need appears.
 
 * WorldConfig/World integration with StateSystem rules: automatically supplying world-level rules to StateSystems, if it requires additional coupling. Example: IdleRule(Burn) decreasing Burn intensity over time as a world rule, while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
+* Concrete game rule definitions binding core rules to game conditions. Example: CancelRule(Burn), WeakenRule(Burn, Wet). Pending game condition definitions.
 * Rules that create Conditions. Example: Wet + Cold -> Sick.
 * Rules affecting Attributes or Effects.
 * Condition/intensity manipulation beyond the current intensity-only model.
