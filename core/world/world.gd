@@ -1,0 +1,66 @@
+extends RefCounted
+class_name World
+
+
+## Pipeline coordinating the phases of the world update cycle.
+var _update_pipeline: UpdatePipeline
+
+## Collection of entities belonging to this world.
+var _entity_handler: EntityHandler
+
+
+## Creates a new world with its own update pipeline and entity collection.
+func _init() -> void:
+	_update_pipeline = UpdatePipeline.new()
+	_entity_handler = EntityHandler.new()
+
+
+## Advances the world update cycle through the update pipeline.
+func update() -> void:
+	_update_pipeline.update()
+
+
+## Spawns a new entity, registers it and returns it.
+func spawn(p_name: String = "") -> Entity:
+	var entity := Entity.new(p_name)
+	register_entity(entity)
+	return entity
+
+
+## Registers an externally created entity in this world.
+## Registration is ignored with an error if the entity id already exists here.
+func register_entity(entity: Entity) -> void:
+	if _entity_handler.contains(entity.id):
+		push_error("World already contains an entity with id %d" % entity.id)
+		return
+	_entity_handler.add_entity(entity)
+
+
+## Removes an entity from this world.
+func remove_entity(entity: Entity) -> void:
+	_entity_handler.remove_entity(entity)
+
+
+## Returns the entity with the given identifier, or null if it does not exist.
+func get_entity(id: int) -> Entity:
+	return _entity_handler.get_entity(id)
+
+
+## Returns true if an entity with the given identifier exists in this world.
+func has_entity(id: int) -> bool:
+	return _entity_handler.contains(id)
+
+
+## Returns all entities in this world.
+func get_entities() -> Array[Entity]:
+	return _entity_handler.get_entities()
+
+
+## Returns the update pipeline owned by this world.
+func get_update_pipeline() -> UpdatePipeline:
+	return _update_pipeline
+
+
+## Returns the entity handler owned by this world.
+func get_entity_handler() -> EntityHandler:
+	return _entity_handler

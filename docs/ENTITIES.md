@@ -24,4 +24,4 @@ Modules/capabilities are optional parts of an entity.
 
 A complete module API is deliberately not defined yet; it will be designed later.
 
-Status: these decisions describe the target model. The current implementation does not reflect them yet; the Entity rework follows this documentation split.
+Status: identity through the temporary static counter is implemented. Composition, capabilities and the module API remain pending.

@@ -17,6 +17,8 @@ Entities are managed through `EntityHandler`, the entity collection belonging to
 * **spawn**: creates an entity, registers it and returns it.
 * **remove**: removes an entity from the world.
 
+Registering an entity whose id already exists in the world emits an error and is ignored; the original entity remains untouched.
+
 The temporal cycle originates in the `World`. Entities do not manage their own tick.
 
 # Update Pipeline
@@ -35,7 +37,7 @@ Established decisions:
 * Connection order to a phase signal must never become an architectural dependency. If a phase ever requires ordering its participants, it must be resolved through an explicit priority/dependency mechanism, never through accidental connection order.
 * Concrete phases and their order are deliberately not defined yet. They will be decided once the module abstractions are finalized.
 
-Status: decisions closed; implementation pending. Until then, the pipeline ships empty.
+Status: implemented with zero phases. Concrete phases remain undefined until module abstractions are finalized.
 
 # WorldConfig
 

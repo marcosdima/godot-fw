@@ -18,8 +18,10 @@ project/
 ├── core/
 │   ├── conditions/
 │   ├── effects/
+│   ├── entities/
 │   ├── rules/
-│   └── state/
+│   ├── state/
+│   └── world/
 ├── game/
 ├── docs/
 └── project.godot
