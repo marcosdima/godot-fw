@@ -1,5 +1,5 @@
-extends RefCounted
-class_name StateSystem
+extends Module
+class_name StateModule
 
 
 ## Current values of the entity's attributes.
@@ -18,8 +18,9 @@ var _rule_handler: RuleHandler
 var _activated_condition_ids: Dictionary = {}
 
 
-## Creates a new state system with its own status, condition handler, effect handler and rule handler.
-func _init() -> void:
+## Creates a new state module bound to the given entity.
+func _init(p_entity: Entity) -> void:
+	super(p_entity)
 	_status = Status.new()
 	_condition_handler = ConditionHandler.new()
 	_effect_handler = EffectHandler.new()

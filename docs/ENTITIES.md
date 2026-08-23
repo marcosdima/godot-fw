@@ -20,8 +20,20 @@ To guarantee that each entity has its own identity, a static incremental counter
 
 The project is oriented toward composition and capabilities instead of a rigid hierarchy.
 
-Modules/capabilities are optional parts of an entity.
+# Modules Ownership
 
-A complete module API is deliberately not defined yet; it will be designed later.
+The entity owns its `Modules` object and delegates module lifecycle concerns to it.
 
-Status: identity through the temporary static counter is implemented. Composition, capabilities and the module API remain pending.
+The entity does not directly manage concrete modules; it communicates through `Modules`.
+
+Modules are optional capabilities of an entity. See MODULES.md for the complete module model.
+
+# World Relationship
+
+The entity holds a reference to the `World` it currently belongs to. The entity is the source of truth for its current World.
+
+`Entity.set_world(world)` is the only supported mechanism for changing it. The transition detaches active modules while still in the old world and attaches them in the new one.
+
+See WORLD.md for how the World lifecycle methods maintain this relationship.
+
+Status: identity through the temporary static counter, the `Modules` facade and the world relationship are implemented. Additional capabilities remain pending.

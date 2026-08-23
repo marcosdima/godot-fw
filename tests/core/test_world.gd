@@ -10,6 +10,12 @@ func test_spawn_creates_registers_and_returns_entity() -> void:
 	assert_eq(world.get_entities().size(), 1)
 
 
+func test_spawn_sets_entity_world() -> void:
+	var world := World.new()
+	var entity := world.spawn("Hero")
+	assert_eq(entity.get_world(), world)
+
+
 func test_spawn_assigns_unique_ids() -> void:
 	var world := World.new()
 	var first := world.spawn("First")
@@ -41,7 +47,29 @@ func test_remove_unregisters_entity() -> void:
 	world.remove_entity(entity)
 	assert_false(world.has_entity(entity.id))
 	assert_null(world.get_entity(entity.id))
+	assert_null(entity.get_world())
 	assert_eq(world.get_entities().size(), 0)
+
+
+func test_register_rejects_entity_from_another_world() -> void:
+	var entity := Entity.new("Traveler")
+	var world_a := World.new()
+	var world_b := World.new()
+	entity.set_world(world_a)
+	world_b.register_entity(entity)
+	assert_push_error_count(1, "cross registration emits an error")
+	assert_false(world_b.has_entity(entity.id))
+	assert_eq(entity.get_world(), world_a)
+
+
+func test_remove_rejects_non_member_entity() -> void:
+	var world_a := World.new()
+	var world_b := World.new()
+	var entity := world_b.spawn("Outsider")
+	world_a.remove_entity(entity)
+	assert_push_error_count(1, "removing a non member emits an error")
+	assert_true(world_b.has_entity(entity.id))
+	assert_eq(entity.get_world(), world_b)
 
 
 func test_update_runs_without_error() -> void:

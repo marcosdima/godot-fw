@@ -16,11 +16,10 @@ The goal is to develop the foundation and a working game template in the same pr
 ```
 project/
 ├── core/
-│   ├── conditions/
-│   ├── effects/
 │   ├── entities/
-│   ├── rules/
-│   ├── state/
+│   │   └── modules/
+│   │       └── state/
+│   ├── primitives/
 │   └── world/
 ├── game/
 ├── docs/
@@ -34,6 +33,7 @@ The exact internal structure of `core` and `game` may evolve as the architecture
 Architecture-specific decisions live in focused documents. This file holds the entry point, the transversal decisions and the general principles.
 
 * [PRIMITIVES.md](PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
+* [MODULES.md](MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
 * [STATE_SYSTEM.md](STATE_SYSTEM.md): State domain: attributes, modifiers, conditions, effects, effect applications and the state update cycle.
 * [RULES.md](RULES.md): Rules domain: condition interactions, generic rule implementations, evaluation and priority.
 * [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
@@ -80,10 +80,11 @@ For example:
 
 ```
 Entity
-└── StateSystem
+└── Modules
+    └── StateModule
 ```
 
-is preferable to creating a large inheritance hierarchy only to guarantee that an entity has state.
+is preferable to creating a large inheritance hierarchy only to guarantee that an entity has capabilities.
 
 Inheritance is appropriate when a type is genuinely a specialization of another type.
 
@@ -100,7 +101,7 @@ is appropriate because `Attribute` is genuinely a specialized identifiable eleme
 
 Generic systems must not contain knowledge of concrete game mechanics.
 
-For example, `StateSystem` may manage conditions, effects and rules, but it must not contain logic specifically referring to `Burn`, `Wet`, `Poison`, or other game-specific concepts.
+For example, `StateModule` may manage conditions, effects and rules, but it must not contain logic specifically referring to `Burn`, `Wet`, `Poison`, or other game-specific concepts.
 
 Game-specific behavior must be expressed through the abstractions provided by `core`.
 
@@ -186,3 +187,4 @@ Deliberately deferred architectural possibilities. Do not implement these until 
 * Rules that create Conditions. Example: Wet + Cold -> Sick.
 * Rules affecting Attributes or Effects.
 * Condition/intensity manipulation beyond the current intensity-only model.
+* Interaction as a Module: unresolved architectural question. Do not assume it must become one.

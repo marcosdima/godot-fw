@@ -28,17 +28,29 @@ func spawn(p_name: String = "") -> Entity:
 
 
 ## Registers an externally created entity in this world.
-## Registration is ignored with an error if the entity id already exists here.
+## Sets the entity's world, attaches its active modules, and ignores with an error
+## entities whose id already exists here or that already belong to another world.
 func register_entity(entity: Entity) -> void:
 	if _entity_handler.contains(entity.id):
 		push_error("World already contains an entity with id %d" % entity.id)
 		return
+	if entity.get_world() != null and entity.get_world() != self:
+		push_error("Entity %d already belongs to another world" % entity.id)
+		return
 	_entity_handler.add_entity(entity)
+	entity._world = self
+	entity.get_modules().attach_all()
 
 
-## Removes an entity from this world.
+## Removes an entity from this world, detaching its active modules and clearing its world.
+## Removal is ignored with an error if the entity does not belong to this world.
 func remove_entity(entity: Entity) -> void:
+	if entity.get_world() != self:
+		push_error("Entity %d does not belong to this world" % entity.id)
+		return
+	entity.get_modules().detach_all()
 	_entity_handler.remove_entity(entity)
+	entity._world = null
 
 
 ## Returns the entity with the given identifier, or null if it does not exist.

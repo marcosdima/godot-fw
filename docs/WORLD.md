@@ -13,11 +13,13 @@ Entities are managed through `EntityHandler`, the entity collection belonging to
 
 ## Entity Lifecycle
 
-* **register**: adds an externally created entity to the world.
+* **register**: adds an externally created entity to the world, sets its world and attaches its active modules.
 * **spawn**: creates an entity, registers it and returns it.
-* **remove**: removes an entity from the world.
+* **remove**: removes an entity from the world, detaches its active modules and clears its world.
 
-Registering an entity whose id already exists in the world emits an error and is ignored; the original entity remains untouched.
+Registering an entity whose id already exists here, or that already belongs to another world, emits an error and is ignored. Removing an entity that does not belong to this world emits an error and is ignored.
+
+An entity's world is maintained exclusively through these lifecycle methods. `Entity.set_world(world)` changes worlds by composing them: detach in the old world, then register in the new one. See ENTITIES.md and MODULES.md.
 
 The temporal cycle originates in the `World`. Entities do not manage their own tick.
 

@@ -26,9 +26,11 @@ If a game requirement appears to require a change to `core`, explain the reason 
 
 ## Folder Organization
 
-Shared core-wide abstractions stay directly under `core/`.
+Group two or more related files into a subdirectory.
 
 Domain-specific classes belong to their respective domain folder.
+
+Module implementations live under `entities/modules/<module>/`.
 
 Do not create folders solely to group classes by inheritance.
 

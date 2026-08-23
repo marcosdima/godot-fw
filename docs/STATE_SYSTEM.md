@@ -1,29 +1,32 @@
-# State System
+# State Module
 
-The state system represents the current state of an entity.
+`StateModule` is the state capability of an entity, implemented as a Module. See MODULES.md for the module model.
 
-The system is designed to be composable and should not require every entity to have a state.
+It represents the current state of an entity.
 
-An entity that requires state owns a `StateSystem`.
+State remains optional: entities that never access their state module simply do not have one.
 
-`StateSystem` is independent of the physical representation of an entity or world. It must not depend on 2D, 3D, physics, or a specific entity implementation.
+An entity gains state by accessing its state module (`entity.modules.state`), which creates it lazily on first access.
 
-`StateSystem` is tick-based. Its update cycle advances in discrete ticks rather than continuous time.
+`StateModule` holds a reference to its owning entity through the `Module` base. This does not couple it to 2D, 3D, physics, or a specific entity implementation.
+
+`StateModule` is tick-based. Its update cycle advances in discrete ticks rather than continuous time, and is currently driven externally through `tick()`. When concrete `UpdatePipeline` phases are defined, the module will connect to them through `attach()`.
 
 Conceptually:
 
 ```
 Entity
-└── StateSystem
-    ├── Status
-    ├── ConditionHandler
-    ├── EffectHandler
-    └── RuleHandler
+└── Modules
+    └── StateModule
+        ├── Status
+        ├── ConditionHandler
+        ├── EffectHandler
+        └── RuleHandler
 ```
 
-`StateSystem` should not depend on concrete game-specific types.
+`StateModule` should not depend on concrete game-specific types.
 
-The handlers used by the state system are built on the generic `Handler` primitive. See PRIMITIVES.md.
+The handlers used by the state module are built on the generic `Handler` primitive. See PRIMITIVES.md.
 
 ## Status
 
@@ -113,15 +116,15 @@ game
 └── BurnCondition
 ```
 
-`StateSystem` must not contain knowledge of concrete conditions.
+`StateModule` must not contain knowledge of concrete conditions.
 
 ## Condition Intensity
 
 Intensity represents the remaining strength/lifetime of a condition.
 
-When a condition reaches a state where its intensity is no longer sufficient to remain alive, it should be removed from the state system.
+When a condition reaches a state where its intensity is no longer sufficient to remain alive, it should be removed from the state module.
 
-A condition is alive while its intensity is greater than zero. `Condition.is_alive()` is defined as `intensity > 0` and encapsulates this rule so that `StateSystem` does not need to know how condition lifetime is represented. `StateSystem` must use `is_alive()` instead of directly checking intensity.
+A condition is alive while its intensity is greater than zero. `Condition.is_alive()` is defined as `intensity > 0` and encapsulates this rule so that `StateModule` does not need to know how condition lifetime is represented. `StateModule` must use `is_alive()` instead of directly checking intensity.
 
 # Effects
 
@@ -152,11 +155,11 @@ The concrete meaning of an effect is determined by the system processing it.
 
 `EffectApplication` describes how an effect is generated and applied over time.
 
-It is the persistent/process-level abstraction. It can persist across multiple `StateSystem` ticks.
+It is the persistent/process-level abstraction. It can persist across multiple `StateModule` ticks.
 
 It may belong to a `Condition`, but does not inherently require one. It may also represent an instant effect submitted directly to `EffectHandler`.
 
-Its rate is expressed in `StateSystem` ticks, not seconds.
+Its rate is expressed in `StateModule` ticks, not seconds.
 
 Do not introduce separate `InstantEffectApplication` / `PersistentEffectApplication` classes. A single `EffectApplication` abstraction covers both cases.
 
@@ -202,13 +205,13 @@ Concrete effect applications may belong to `game` when their behavior is game-sp
 
 # State Handlers
 
-The state system manages its collections through specialized handlers built on the generic `Handler` primitive. See PRIMITIVES.md.
+The state module manages its collections through specialized handlers built on the generic `Handler` primitive. See PRIMITIVES.md.
 
 ## EffectHandler
 
 `EffectHandler` remains a `Handler` because it stores active `EffectApplication`s and their processing state.
 
-It processes applications on `StateSystem` ticks.
+It processes applications on `StateModule` ticks.
 
 It generates and processes `Effect`s.
 
