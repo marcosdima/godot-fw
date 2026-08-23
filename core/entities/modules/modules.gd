@@ -11,6 +11,9 @@ var _active: Array[Module] = []
 ## Backing field of the lazy state module.
 var _state: StateModule
 
+## Backing field of the lazy interaction module.
+var _interaction: InteractionModule
+
 
 ## Creates the modules facade for the given entity. No module is instantiated here.
 func _init(p_entity: Entity) -> void:
@@ -24,6 +27,15 @@ var state: StateModule:
 			_state = StateModule.new(_entity)
 			_activate(_state)
 		return _state
+
+
+## Returns the interaction module, creating and activating it on first access.
+var interaction: InteractionModule:
+	get:
+		if _interaction == null:
+			_interaction = InteractionModule.new(_entity)
+			_activate(_interaction)
+		return _interaction
 
 
 ## Detaches every active module. Used when the entity leaves its current world context.

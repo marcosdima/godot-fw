@@ -18,6 +18,7 @@ project/
 ├── core/
 │   ├── entities/
 │   │   └── modules/
+│   │       ├── interaction/
 │   │       └── state/
 │   ├── primitives/
 │   └── world/
@@ -34,6 +35,7 @@ Architecture-specific decisions live in focused documents. This file holds the e
 
 * [PRIMITIVES.md](PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
 * [MODULES.md](MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
+* [INTERACTION.md](INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
 * [STATE_SYSTEM.md](STATE_SYSTEM.md): State domain: attributes, modifiers, conditions, effects, effect applications and the state update cycle.
 * [RULES.md](RULES.md): Rules domain: condition interactions, generic rule implementations, evaluation and priority.
 * [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
@@ -187,4 +189,3 @@ Deliberately deferred architectural possibilities. Do not implement these until 
 * Rules that create Conditions. Example: Wet + Cold -> Sick.
 * Rules affecting Attributes or Effects.
 * Condition/intensity manipulation beyond the current intensity-only model.
-* Interaction as a Module: unresolved architectural question. Do not assume it must become one.

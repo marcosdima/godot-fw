@@ -142,6 +142,12 @@ It is an ordinary lazy module: created on first access like any other module.
 
 Its update cycle is currently driven externally through `tick()`. When concrete `UpdatePipeline` phases are defined, the module will connect to the phases it needs through `attach()`.
 
+# InteractionModule
+
+`InteractionModule` is the interaction capability of an entity. See INTERACTION.md for the complete model.
+
+It maintains the available interactions and the currently focused one. It is an ordinary lazy module and does not connect to world context.
+
 # Folder Location
 
 Module infrastructure lives under `entities/modules/`. Concrete module implementations live under `entities/modules/<module>/`.
