@@ -11,6 +11,8 @@ It is responsible for world-level concerns such as:
 
 Entities are managed through `EntityHandler`, the entity collection belonging to the World, built on the generic `Handler` primitive. See PRIMITIVES.md and ENTITIES.md.
 
+The collection is exposed directly as `world.entity_handler`. Lookup and membership operations belong to the handler; the World owns only the lifecycle and does not mirror the handler's API.
+
 ## Entity Lifecycle
 
 * **register**: adds an externally created entity to the world, sets its world and attaches its active modules.

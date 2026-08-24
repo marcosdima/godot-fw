@@ -34,8 +34,8 @@ func test_state_persists_across_world_change() -> void:
 	entity.set_world(world_a)
 	entity.get_modules().state.add_condition(Condition.new(TestConditionId.BURN, "Burn", 10.0))
 	entity.set_world(world_b)
-	assert_false(world_a.has_entity(entity.id))
-	assert_true(world_b.has_entity(entity.id))
+	assert_false(world_a.entity_handler.contains(entity.id))
+	assert_true(world_b.entity_handler.contains(entity.id))
 	assert_eq(entity.get_world(), world_b)
 	var state := entity.get_modules().state
 	assert_eq(state.get_condition_handler().get_condition(TestConditionId.BURN).intensity, 10.0)
@@ -48,7 +48,7 @@ func test_set_world_to_null_leaves_the_collection_and_clears_world() -> void:
 	var world := World.new()
 	entity.set_world(world)
 	entity.set_world(null)
-	assert_false(world.has_entity(entity.id))
+	assert_false(world.entity_handler.contains(entity.id))
 	assert_null(entity.get_world())
 
 
@@ -58,7 +58,7 @@ func test_set_world_to_same_world_is_a_no_op() -> void:
 	entity.set_world(world)
 	entity.set_world(world)
 	assert_push_error_count(0, "same-world transition emits no errors")
-	assert_eq(world.get_entities().size(), 1)
+	assert_eq(world.entity_handler.get_entities().size(), 1)
 
 
 func test_cross_registration_is_rejected() -> void:
@@ -68,5 +68,5 @@ func test_cross_registration_is_rejected() -> void:
 	entity.set_world(world_a)
 	world_b.register_entity(entity)
 	assert_push_error_count(1, "cross registration emits an error")
-	assert_false(world_b.has_entity(entity.id))
+	assert_false(world_b.entity_handler.contains(entity.id))
 	assert_eq(entity.get_world(), world_a)

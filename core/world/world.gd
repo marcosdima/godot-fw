@@ -5,14 +5,16 @@ class_name World
 ## Pipeline coordinating the phases of the world update cycle.
 var _update_pipeline: UpdatePipeline
 
+
 ## Collection of entities belonging to this world.
-var _entity_handler: EntityHandler
+## Lookup and membership operations belong to this handler; World does not mirror them.
+var entity_handler: EntityHandler
 
 
 ## Creates a new world with its own update pipeline and entity collection.
 func _init() -> void:
 	_update_pipeline = UpdatePipeline.new()
-	_entity_handler = EntityHandler.new()
+	entity_handler = EntityHandler.new()
 
 
 ## Advances the world update cycle through the update pipeline.
@@ -31,13 +33,13 @@ func spawn(p_name: String = "") -> Entity:
 ## Sets the entity's world, attaches its active modules, and ignores with an error
 ## entities whose id already exists here or that already belong to another world.
 func register_entity(entity: Entity) -> void:
-	if _entity_handler.contains(entity.id):
+	if entity_handler.contains(entity.id):
 		push_error("World already contains an entity with id %d" % entity.id)
 		return
 	if entity.get_world() != null and entity.get_world() != self:
 		push_error("Entity %d already belongs to another world" % entity.id)
 		return
-	_entity_handler.add_entity(entity)
+	entity_handler.add_entity(entity)
 	entity._world = self
 	entity.get_modules().attach_all()
 
@@ -49,30 +51,10 @@ func remove_entity(entity: Entity) -> void:
 		push_error("Entity %d does not belong to this world" % entity.id)
 		return
 	entity.get_modules().detach_all()
-	_entity_handler.remove_entity(entity)
+	entity_handler.remove_entity(entity)
 	entity._world = null
-
-
-## Returns the entity with the given identifier, or null if it does not exist.
-func get_entity(id: int) -> Entity:
-	return _entity_handler.get_entity(id)
-
-
-## Returns true if an entity with the given identifier exists in this world.
-func has_entity(id: int) -> bool:
-	return _entity_handler.contains(id)
-
-
-## Returns all entities in this world.
-func get_entities() -> Array[Entity]:
-	return _entity_handler.get_entities()
 
 
 ## Returns the update pipeline owned by this world.
 func get_update_pipeline() -> UpdatePipeline:
 	return _update_pipeline
-
-
-## Returns the entity handler owned by this world.
-func get_entity_handler() -> EntityHandler:
-	return _entity_handler
