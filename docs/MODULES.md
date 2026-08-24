@@ -52,23 +52,26 @@ There is no separate "active but unattached" state.
 ```
 Module
 ├── entity
+├── _get_phase_callbacks()
 ├── attach()
 └── detach()
 ```
 
 `entity` is assigned when the module is constructed and cannot change.
 
-`attach()` and `detach()` are no-op methods in the base class and may be overridden by concrete modules.
+Modules declare their participation in the world update cycle by overriding `_get_phase_callbacks()`, which returns one `PhaseCallback` per participated phase: a pure data container holding the phase and the callback invoked when that phase runs. Base modules participate in none.
 
-Typical responsibilities of concrete modules:
+`attach()` connects every declared callback to the corresponding signal of the entity's current World `UpdatePipeline` and records each connection made as a `PhaseConnection`: a pure data container holding the connected signal and the callable. Without a World there is nothing to connect to and the module attaches normally. `detach()` disconnects exactly the connections recorded during `attach()`.
 
-* connecting/disconnecting from `UpdatePipeline` phase signals;
-* registering/unregistering external callbacks;
-* establishing/removing other external relationships.
+No protection against duplicated attach exists; the World and Modules lifecycle guarantees the correct sequence.
+
+Concrete modules never connect to pipeline signals manually. Overriding `attach()` or `detach()` for other external relationships requires calling `super()` so the phase connections are preserved.
+
+`PhaseCallback` and `PhaseConnection` are defined in their own files under `entities/modules/`; neither manages connections nor contains logic.
 
 Module creation produces a usable active module. Do not introduce a separate setup or initialization step; `Module.new(entity)` creates the module and `Modules` immediately registers it as active and calls `attach()`.
 
-A concrete module may use Godot-specific APIs when its behavior explicitly requires them (for example, connecting to pipeline signals). The base abstraction remains engine-independent.
+A concrete module may use Godot-specific APIs when its behavior explicitly requires them. The base abstraction remains engine-independent.
 
 # Persistence
 
@@ -132,7 +135,7 @@ There is no dependency declaration system. Accessing a non-instantiated module l
 
 Do not introduce dependency injection, dependency registries, service locators, or similar abstractions unless a concrete problem requires them.
 
-Avoid accessing sibling modules during module construction; lazy resolution during that window can recurse.
+Avoid accessing sibling modules during module construction, attach or detach; lazy resolution during those windows can recurse.
 
 # StateModule
 
@@ -140,7 +143,7 @@ Avoid accessing sibling modules during module construction; lazy resolution duri
 
 It is an ordinary lazy module: created on first access like any other module.
 
-Its update cycle is currently driven externally through `tick()`. When concrete `UpdatePipeline` phases are defined, the module will connect to the phases it needs through `attach()`.
+Its update cycle runs through the world update cycle: the module participates in `UpdatePipeline.Phase.STATE` with its `tick()` method. `tick()` remains available for driving the module directly, which is how state logic is exercised without a world.
 
 # InteractionModule
 

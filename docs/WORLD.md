@@ -21,6 +21,8 @@ The collection is exposed directly as `world.entity_handler`. Lookup and members
 
 Registering an entity whose id already exists here, or that already belongs to another world, emits an error and is ignored. Removing an entity that does not belong to this world emits an error and is ignored.
 
+An entity must be removed from its world before being released. Otherwise its module connections to the update pipeline keep it alive and receiving updates.
+
 An entity's world is maintained exclusively through these lifecycle methods. `Entity.set_world(world)` changes worlds by composing them: detach in the old world, then register in the new one. See ENTITIES.md and MODULES.md.
 
 The temporal cycle originates in the `World`. Entities do not manage their own tick.
@@ -31,17 +33,19 @@ The temporal cycle originates in the `World`. Entities do not manage their own t
 
 Established decisions:
 
-* `World` owns and executes the pipeline from its update cycle. The update flow goes exclusively through `UpdatePipeline.update()`.
+* `World` owns and executes the pipeline from its update cycle. The update flow goes exclusively through `update_pipeline.update()`.
 * `World` must not know or call concrete systems such as Movement, Collision or State.
 * Phases are identified by the `UpdatePipeline.Phase` enum, nested in `UpdatePipeline` and defined in `core`. Loose numeric identifiers are not allowed.
+* The pipeline keeps the signal of each phase internally in a dictionary whose insertion order defines the execution order. Phase order belongs exclusively to the pipeline.
+* `phase_signal(phase)` returns the signal of a phase. Phase signals receive no arguments.
 * The pipeline executes a phase and then emits that phase's signal. The signal is the mechanism through which modules receive the phase.
-* Modules connect directly to the signals of the phases they need.
+* Modules connect directly to the signals of the phases they need, through the participations they declare. See MODULES.md for the connection mechanics.
 * There is no module registration and no `ModuleManager`.
 * `World` and the pipeline do not know which concrete modules exist.
 * Connection order to a phase signal must never become an architectural dependency. If a phase ever requires ordering its participants, it must be resolved through an explicit priority/dependency mechanism, never through accidental connection order.
-* Concrete phases and their order are deliberately not defined yet. They will be decided once the module abstractions are finalized.
+* Currently the only defined phase is `Phase.STATE`. Other phases will be added only when a concrete need appears.
 
-Status: implemented with zero phases. Concrete phases remain undefined until module abstractions are finalized.
+Status: implemented with `Phase.STATE` as its only phase.
 
 # Area
 

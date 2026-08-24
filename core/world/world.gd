@@ -3,7 +3,7 @@ class_name World
 
 
 ## Pipeline coordinating the phases of the world update cycle.
-var _update_pipeline: UpdatePipeline
+var update_pipeline: UpdatePipeline
 
 
 ## Collection of entities belonging to this world.
@@ -13,13 +13,13 @@ var entity_handler: EntityHandler
 
 ## Creates a new world with its own update pipeline and entity collection.
 func _init() -> void:
-	_update_pipeline = UpdatePipeline.new()
+	update_pipeline = UpdatePipeline.new()
 	entity_handler = EntityHandler.new()
 
 
 ## Advances the world update cycle through the update pipeline.
 func update() -> void:
-	_update_pipeline.update()
+	update_pipeline.update()
 
 
 ## Spawns a new entity, registers it and returns it.
@@ -53,8 +53,3 @@ func remove_entity(entity: Entity) -> void:
 	entity.get_modules().detach_all()
 	entity_handler.remove_entity(entity)
 	entity._world = null
-
-
-## Returns the update pipeline owned by this world.
-func get_update_pipeline() -> UpdatePipeline:
-	return _update_pipeline

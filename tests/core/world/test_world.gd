@@ -80,8 +80,8 @@ func test_update_runs_without_error() -> void:
 
 func test_update_pipeline_is_owned_by_world() -> void:
 	var world := World.new()
-	assert_same(world.get_update_pipeline(), world.get_update_pipeline())
-	world.get_update_pipeline().update()
+	assert_same(world.update_pipeline, world.update_pipeline)
+	world.update_pipeline.update()
 	assert_true(true)
 
 

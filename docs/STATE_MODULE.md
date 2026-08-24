@@ -10,7 +10,7 @@ An entity gains state by accessing its state module (`entity.modules.state`), wh
 
 `StateModule` holds a reference to its owning entity through the `Module` base. This does not couple it to 2D, 3D, physics, or a specific entity implementation.
 
-`StateModule` is tick-based. Its update cycle advances in discrete ticks rather than continuous time, and is currently driven externally through `tick()`. When concrete `UpdatePipeline` phases are defined, the module will connect to them through `attach()`.
+`StateModule` is tick-based. Its update cycle advances in discrete ticks rather than continuous time. The module participates in `UpdatePipeline.Phase.STATE` with its `tick()` method, so its ticks arrive through its world pipeline connection. `tick()` remains available for driving the module directly, which is how logic is exercised without a world.
 
 Conceptually:
 

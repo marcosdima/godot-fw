@@ -27,6 +27,11 @@ func _init(p_entity: Entity) -> void:
 	_rule_handler = RuleHandler.new()
 
 
+## Returns the pipeline phases this module participates in.
+func _get_phase_callbacks() -> Array[PhaseCallback]:
+	return [PhaseCallback.new(UpdatePipeline.Phase.STATE, tick)]
+
+
 ## Advances the state module by one tick.
 func tick() -> void:
 	_evaluate_rules()
