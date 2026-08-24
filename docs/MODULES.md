@@ -136,7 +136,7 @@ Avoid accessing sibling modules during module construction; lazy resolution duri
 
 # StateModule
 
-`StateModule` is the state capability of an entity. See STATE_SYSTEM.md for its internal responsibilities.
+`StateModule` is the state capability of an entity. See STATE_MODULE.md for its internal responsibilities.
 
 It is an ordinary lazy module: created on first access like any other module.
 

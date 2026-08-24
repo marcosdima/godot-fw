@@ -31,6 +31,7 @@ The base `Handler` provides operations such as:
 * clear
 * get value
 * set value
+* get elements
 
 Specialized handlers may extend this behavior when domain-specific operations are required.
 
@@ -38,6 +39,7 @@ Examples:
 
 ```
 Handler
+├── EntityHandler
 ├── ConditionHandler
 ├── EffectHandler
 └── RuleHandler

@@ -38,6 +38,7 @@ Conceptually:
 Status
 └── Attribute
     ├── base_value
+    ├── current_value
     └── modifiers
 ```
 
@@ -57,7 +58,7 @@ An attribute has a base value and may have modifiers.
 
 The base value should represent the underlying value.
 
-`base_value` represents the original value and is never modified by the state system.
+`base_value` represents the original value and is never modified by the state module.
 
 `current_value` represents the mutable current state of the attribute. Effects modify `current_value`.
 
@@ -221,20 +222,19 @@ Applications associated with a `Condition` are removed when that `Condition` is 
 
 `ConditionHandler` provides typed access to conditions. The evaluation contract of `RuleHandler` is documented in RULES.md.
 
-# State System Update
+# Update Cycle
 
 The conceptual update order is:
 
 ```
 1. Evaluate rules.
-2. Update conditions.
-3. Remove conditions that are no longer alive, together with their registered effect applications.
-4. Activate newly active conditions.
-5. Register their effect applications.
-6. Apply effects according to their applications.
+2. Remove conditions that are no longer alive, together with their registered effect applications.
+3. Activate newly active conditions.
+4. Register their effect applications.
+5. Apply effects according to their applications.
 ```
 
-Conditions brought to a dead state by rules exit the circuit at step 3, before their effect applications are processed in that same tick.
+Conditions brought to a dead state by rules exit the circuit at step 2, before their effect applications are processed in that same tick.
 
 Rules are evaluated at step 1. Their inputs, effects, evaluation order and priority contract are documented in RULES.md.
 

@@ -64,6 +64,8 @@ Area does not mix with collision layers, physics, proximity, 2D/3D or nodes; tho
 
 `WorldConfig` contains configurable world-level settings.
 
+Status: not implemented. The configuration surface will be defined when a concrete need appears.
+
 For example:
 
 ```

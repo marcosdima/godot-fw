@@ -16,8 +16,6 @@ To guarantee that each entity has its own identity, a static incremental counter
 
 `Entity` must not be coupled to 2D, 3D, or concrete Godot nodes.
 
-`Static`, `Dynamic` and `Area` must not form the fundamental hierarchy of `Entity`.
-
 The project is oriented toward composition and capabilities instead of a rigid hierarchy.
 
 # Modules Ownership

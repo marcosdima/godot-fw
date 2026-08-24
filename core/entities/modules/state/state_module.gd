@@ -11,7 +11,7 @@ var _condition_handler: ConditionHandler
 ## Active effect applications and their processing.
 var _effect_handler: EffectHandler
 
-## Rules evaluated by this state system.
+## Rules evaluated by this state module.
 var _rule_handler: RuleHandler
 
 ## Identifiers of conditions whose effect applications are already registered.
@@ -27,7 +27,7 @@ func _init(p_entity: Entity) -> void:
 	_rule_handler = RuleHandler.new()
 
 
-## Advances the state system by one tick.
+## Advances the state module by one tick.
 func tick() -> void:
 	_evaluate_rules()
 	_remove_dead_conditions()
@@ -35,37 +35,37 @@ func tick() -> void:
 	_effect_handler.process(_status)
 
 
-## Adds a condition to this state system.
+## Adds a condition to this state module.
 func add_condition(condition: Condition) -> void:
 	_condition_handler.add_condition(condition)
 
 
-## Adds a rule to this state system.
+## Adds a rule to this state module.
 func add_rule(rule: Rule) -> void:
 	_rule_handler.add_rule(rule)
 
 
-## Returns the rule handler of this state system.
+## Returns the rule handler of this state module.
 func get_rule_handler() -> RuleHandler:
 	return _rule_handler
 
 
-## Returns the status of this state system.
+## Returns the status of this state module.
 func get_status() -> Status:
 	return _status
 
 
-## Returns the condition handler of this state system.
+## Returns the condition handler of this state module.
 func get_condition_handler() -> ConditionHandler:
 	return _condition_handler
 
 
-## Returns the effect handler of this state system.
+## Returns the effect handler of this state module.
 func get_effect_handler() -> EffectHandler:
 	return _effect_handler
 
 
-## Evaluates the rules of this state system in priority order.
+## Evaluates the rules of this state module in priority order.
 func _evaluate_rules() -> void:
 	for rule in _rule_handler.get_rules_by_priority():
 		rule.apply(_condition_handler.get_conditions())

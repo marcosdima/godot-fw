@@ -2,7 +2,7 @@ extends Element
 class_name EffectApplication
 
 
-## Number of StateSystem ticks between consecutive applications of this effect.
+## Number of StateModule ticks between consecutive applications of this effect.
 var rate: int
 
 

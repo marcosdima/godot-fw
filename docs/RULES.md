@@ -2,7 +2,7 @@
 
 `Rule` represents an abstract interaction or modification involving conditions.
 
-Rules exist to prevent condition interactions from being hardcoded into the state system.
+Rules exist to prevent condition interactions from being hardcoded into the state module.
 
 For example, the interaction between `Burn` and `Wet` should not be implemented as:
 
@@ -23,15 +23,15 @@ presence = Wet
 factor = 0.5
 ```
 
-Rules operate on the conditions owned by a `StateSystem`. See STATE_SYSTEM.md for how conditions, intensity and the state update cycle work.
+Rules operate on the conditions owned by a `StateModule`. See STATE_MODULE.md for how conditions, intensity and the state update cycle work.
 
 ## Scope
 
-Rules operate at the `StateSystem` level.
+Rules operate at the `StateModule` level.
 
-A `StateSystem` may have its own rules, specific to that entity.
+A `StateModule` may have its own rules, specific to that entity.
 
-The `World` may eventually define a set of general rules applicable to StateSystems. See Future in ARCHITECTURE.md.
+The `World` may eventually define a set of general rules applicable to StateModules. See Future in ARCHITECTURE.md.
 
 Rules must not depend on `Entity` or `World`.
 
@@ -47,7 +47,7 @@ Effects are transient results and do not independently represent state to react 
 
 Rules primarily operate on condition intensity. For the initial implementation, rules may modify only `Condition.intensity`.
 
-Rules do not directly modify the `ConditionHandler`. The `StateSystem` evaluates rules and performs the necessary structural changes through the `ConditionHandler`.
+Rules do not directly modify the `ConditionHandler`. The `StateModule` evaluates rules and performs the necessary structural changes through the `ConditionHandler`.
 
 Reducing a condition's intensity to zero or below is the mechanism for removing it. A rule that cancels a condition this way is a valid rule concept.
 
@@ -55,7 +55,7 @@ When a rule brings a condition to an intensity that is no longer alive, that con
 
 ## Evaluation
 
-The `StateSystem` evaluates rules sequentially, in priority order.
+The `StateModule` evaluates rules sequentially, in priority order.
 
 Each rule receives the current conditions and may modify their intensity directly.
 
@@ -65,13 +65,13 @@ Rules evaluated later observe modifications made by rules evaluated earlier.
 
 Rules have an integer priority. Higher numeric priority executes first.
 
-Ordering is deterministic and shared by all StateSystems. Rules with equal priority are ordered by ascending identifier.
+Ordering is deterministic and shared by all StateModules. Rules with equal priority are ordered by ascending identifier.
 
 Registration order must not affect evaluation order.
 
 ## RuleHandler
 
-`RuleHandler` extends the generic `Handler` primitive (see PRIMITIVES.md) and stores the rules evaluated by a `StateSystem`.
+`RuleHandler` extends the generic `Handler` primitive (see PRIMITIVES.md) and stores the rules evaluated by a `StateModule`.
 
 It provides evaluation order through `get_rules_by_priority()`: rules sorted by descending priority, breaking ties by ascending identifier.
 

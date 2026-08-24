@@ -17,6 +17,8 @@ The goal is to develop the foundation and a working game template in the same pr
 project/
 ├── core/
 │   ├── entities/
+│   │   ├── entity.gd
+│   │   ├── entity_handler.gd
 │   │   └── modules/
 │   │       ├── interaction/
 │   │       └── state/
@@ -26,6 +28,7 @@ project/
 │       ├── update_pipeline.gd
 │       └── world.gd
 ├── game/
+├── tests/
 ├── docs/
 └── project.godot
 ```
@@ -39,7 +42,7 @@ Architecture-specific decisions live in focused documents. This file holds the e
 * [PRIMITIVES.md](PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
 * [MODULES.md](MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
 * [INTERACTION.md](INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
-* [STATE_SYSTEM.md](STATE_SYSTEM.md): State domain: attributes, modifiers, conditions, effects, effect applications and the state update cycle.
+* [STATE_MODULE.md](STATE_MODULE.md): State domain: attributes, modifiers, conditions, effects, effect applications and the state update cycle.
 * [RULES.md](RULES.md): Rules domain: condition interactions, generic rule implementations, evaluation and priority.
 * [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
 * [ENTITIES.md](ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
@@ -175,7 +178,7 @@ Examples include:
 * `modifier_added`
 * `modifier_removed`
 
-Signals should allow systems such as UI, animation, audio, or gameplay logic to react without requiring the state system to know about those consumers.
+Signals should allow systems such as UI, animation, audio, or gameplay logic to react without requiring the state module to know about those consumers.
 
 Prefer direct Godot signals where a direct relationship exists.
 
@@ -187,7 +190,7 @@ A global event bus may be considered later if a concrete architectural need for 
 
 Deliberately deferred architectural possibilities. Do not implement these until a concrete need appears.
 
-* WorldConfig/World integration with StateSystem rules: automatically supplying world-level rules to StateSystems, if it requires additional coupling. Example: IdleRule(Burn) decreasing Burn intensity over time as a world rule, while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
+* WorldConfig/World integration with StateModule rules: automatically supplying world-level rules to StateModules, if it requires additional coupling. Example: IdleRule(Burn) decreasing Burn intensity over time as a world rule, while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
 * Concrete game rule definitions binding core rules to game conditions. Example: CancelRule(Burn), WeakenRule(Burn, Wet). Pending game condition definitions.
 * Rules that create Conditions. Example: Wet + Cold -> Sick.
 * Rules affecting Attributes or Effects.

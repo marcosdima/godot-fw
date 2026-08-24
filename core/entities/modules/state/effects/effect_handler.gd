@@ -9,7 +9,7 @@ var _tick_counters: Dictionary = {}
 var _pending_instant: Array[EffectApplication] = []
 
 
-## Advances the effect processing by one StateSystem tick.
+## Advances the effect processing by one StateModule tick.
 func process(status: Status) -> void:
 	_process_pending_instant(status)
 	_process_applications(status)

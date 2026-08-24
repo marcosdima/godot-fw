@@ -2,7 +2,7 @@ extends Element
 class_name Attribute
 
 
-## Original value of this attribute. Never modified by the state system.
+## Original value of this attribute. Never modified by the state module.
 var base_value: float
 
 ## Current mutable value of this attribute. Effects modify this value.
