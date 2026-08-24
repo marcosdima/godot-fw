@@ -22,6 +22,9 @@ project/
 │   │       └── state/
 │   ├── primitives/
 │   └── world/
+│       ├── area.gd
+│       ├── update_pipeline.gd
+│       └── world.gd
 ├── game/
 ├── docs/
 └── project.godot
@@ -189,3 +192,4 @@ Deliberately deferred architectural possibilities. Do not implement these until 
 * Rules that create Conditions. Example: Wet + Cold -> Sick.
 * Rules affecting Attributes or Effects.
 * Condition/intensity manipulation beyond the current intensity-only model.
+* TagModule: possible future capability for tagging entities. Not part of the current implementation.

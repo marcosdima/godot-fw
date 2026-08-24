@@ -41,6 +41,25 @@ Established decisions:
 
 Status: implemented with zero phases. Concrete phases remain undefined until module abstractions are finalized.
 
+# Area
+
+`Area` is a core abstraction representing a region that keeps track of which entities are inside it.
+
+Real spatial detection belongs to the game: core provides only the API for the game to notify entries and exits.
+
+Area is composed of an `EntityHandler` holding the entities currently inside. It has no identity, name or id of its own; identity belongs to `Entity`.
+
+## Admission
+
+* `enter(entity) -> bool`: validates through `can_enter(entity)`. Rejects entities already inside or denied by the admission filter. On success returns true and emits `entity_entered`.
+* `exit(entity)`: operates only on registered entities; otherwise the attempt is rejected with an error. On success emits `entity_exited`.
+* `can_enter(entity) -> bool`: evaluates an optional admission filter callable. Without a filter, any entity may enter. The filter applies only at admission time; entities already inside are never revalidated.
+* `has_entity(entity)` and `get_entities()` provide membership queries.
+
+Signals `entity_entered(entity)` and `entity_exited(entity)` are emitted only when the state actually changes.
+
+Area does not mix with collision layers, physics, proximity, 2D/3D or nodes; those concerns belong to the game.
+
 # WorldConfig
 
 `WorldConfig` contains configurable world-level settings.
