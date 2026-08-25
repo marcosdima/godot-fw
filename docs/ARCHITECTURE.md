@@ -46,6 +46,8 @@ Architecture-specific decisions live in focused documents. This file holds the e
 * [RULES.md](RULES.md): Rules domain: condition interactions, generic rule implementations, evaluation and priority.
 * [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
 * [ENTITIES.md](ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
+* [BRANCHES.md](BRANCHES.md): Branch categories: contracts of experiments and prototypes towards `core`, naming conventions and active branches.
+
 
 ## Dependency Rules
 
