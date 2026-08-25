@@ -125,7 +125,13 @@ Intensity represents the remaining strength/lifetime of a condition.
 
 When a condition reaches a state where its intensity is no longer sufficient to remain alive, it should be removed from the state module.
 
-A condition is alive while its intensity is greater than zero. `Condition.is_alive()` is defined as `intensity > 0` and encapsulates this rule so that `StateModule` does not need to know how condition lifetime is represented. `StateModule` must use `is_alive()` instead of directly checking intensity.
+A condition is alive while its intensity is greater than its death threshold. `Condition.is_alive()` is defined as `intensity > death_threshold` and encapsulates this rule so that `StateModule` does not need to know how condition lifetime is represented. `StateModule` must use `is_alive()` instead of directly checking intensity.
+
+The default death threshold is `0.1` (`Condition.DEFAULT_DEATH_THRESHOLD`). Proportional intensity reductions, such as those performed by `IdleRule` or `WeakenRule`, approach zero without ever reaching it. The death threshold defines when the remaining intensity is no longer sufficient to remain alive.
+
+A condition whose intensity is at or below its death threshold when it is added is removed on the next state module tick without being activated.
+
+A game that requires a condition to remain alive until its intensity reaches exactly zero creates it explicitly with a death threshold of `0.0`.
 
 # Effects
 

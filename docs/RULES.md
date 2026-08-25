@@ -51,6 +51,8 @@ Rules do not directly modify the `ConditionHandler`. The `StateModule` evaluates
 
 Reducing a condition's intensity to zero or below is the mechanism for removing it. A rule that cancels a condition this way is a valid rule concept.
 
+Proportional reductions such as those performed by `IdleRule` or `WeakenRule` do not need to reach zero. A condition dies when its intensity falls to or below its death threshold, which is `0.1` by default. See STATE_MODULE.md for how condition liveness is defined.
+
 When a rule brings a condition to an intensity that is no longer alive, that condition and its effect applications leave the circuit before effect applications are processed in that same tick.
 
 ## Evaluation

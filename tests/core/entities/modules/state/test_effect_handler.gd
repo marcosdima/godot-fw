@@ -21,6 +21,14 @@ func test_apply_effect_modifies_current_value_through_status() -> void:
 	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 95.0)
 
 
+func test_apply_effect_respects_attribute_min_value() -> void:
+	var handler := EffectHandler.new()
+	var status := Status.new()
+	status.add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 10.0, 0.0))
+	handler.apply_effect(Effect.new(TestAttributeId.HEALTH, -40.0), status)
+	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 0.0)
+
+
 func test_apply_effect_ignores_unknown_target() -> void:
 	var handler := EffectHandler.new()
 	var status := _create_status()
