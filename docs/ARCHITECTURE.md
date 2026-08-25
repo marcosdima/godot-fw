@@ -196,3 +196,6 @@ Deliberately deferred architectural possibilities. Do not implement these until 
 * Rules affecting Attributes or Effects.
 * Condition/intensity manipulation beyond the current intensity-only model.
 * TagModule: possible future capability for tagging entities. Not part of the current implementation.
+* Time-dependent phases: extending the phase signal contract with delta/time once the first time-based module appears. STATE remains intentionally tick-based until then.
+* Explicit participant priority within a phase, if a second STATE participant ever makes connection order relevant.
+* An entity disposal API, if manual remove-before-release proves error-prone in practice.

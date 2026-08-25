@@ -63,6 +63,8 @@ Modules declare their participation in the world update cycle by overriding `_ge
 
 `attach()` connects every declared callback to the corresponding signal of the entity's current World `UpdatePipeline` and records each connection made as a `PhaseConnection`: a pure data container holding the connected signal and the callable. Without a World there is nothing to connect to and the module attaches normally. `detach()` disconnects exactly the connections recorded during `attach()`.
 
+Connection order to a phase signal carries no architectural meaning. If participants of a phase ever require ordering, resolve it explicitly. See WORLD.md.
+
 No protection against duplicated attach exists; the World and Modules lifecycle guarantees the correct sequence.
 
 Concrete modules never connect to pipeline signals manually. Overriding `attach()` or `detach()` for other external relationships requires calling `super()` so the phase connections are preserved.

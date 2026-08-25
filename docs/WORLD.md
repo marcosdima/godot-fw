@@ -21,11 +21,11 @@ The collection is exposed directly as `world.entity_handler`. Lookup and members
 
 Registering an entity whose id already exists here, or that already belongs to another world, emits an error and is ignored. Removing an entity that does not belong to this world emits an error and is ignored.
 
-An entity must be removed from its world before being released. Otherwise its module connections to the update pipeline keep it alive and receiving updates.
+An entity must be removed from its world before being released. Pipeline connections hold strong references to their callbacks, so a registered entity whose modules participate in the update cycle remains alive and keeps receiving ticks even when the game no longer uses it. Enforcing this removal order is a responsibility of the runtime.
 
 An entity's world is maintained exclusively through these lifecycle methods. `Entity.set_world(world)` changes worlds by composing them: detach in the old world, then register in the new one. See ENTITIES.md and MODULES.md.
 
-The temporal cycle originates in the `World`. Entities do not manage their own tick.
+The temporal cycle originates in the `World`. Entities do not manage their own tick. Who repeatedly advances the cycle over time is decided in Runtime and Clock below.
 
 # Update Pipeline
 
@@ -38,7 +38,7 @@ Established decisions:
 * Phases are identified by the `UpdatePipeline.Phase` enum, nested in `UpdatePipeline` and defined in `core`. Loose numeric identifiers are not allowed.
 * The pipeline keeps the signal of each phase internally in a dictionary whose insertion order defines the execution order. Phase order belongs exclusively to the pipeline.
 * `phase_signal(phase)` returns the signal of a phase. Phase signals receive no arguments.
-* The pipeline executes a phase and then emits that phase's signal. The signal is the mechanism through which modules receive the phase.
+* Executing a phase consists of emitting its phase signal. The signal is the mechanism through which modules receive the phase.
 * Modules connect directly to the signals of the phases they need, through the participations they declare. See MODULES.md for the connection mechanics.
 * There is no module registration and no `ModuleManager`.
 * `World` and the pipeline do not know which concrete modules exist.
@@ -46,6 +46,23 @@ Established decisions:
 * Currently the only defined phase is `Phase.STATE`. Other phases will be added only when a concrete need appears.
 
 Status: implemented with `Phase.STATE` as its only phase.
+
+# Runtime and Clock
+
+Core is step-based: advancing the simulation means calling `world.update()`, which executes exactly one update cycle.
+
+Core never starts timers, threads or engine processes, and never reads an engine clock. The loop that calls `world.update()` repeatedly belongs to the runtime, never to `core`:
+
+* Tests drive worlds manually, tick by tick.
+* The game owns the clock. A future Godot entry point (for example a Main2D node) maps its engine ticks to `world.update()` calls.
+
+This keeps `core` engine-independent and leaves the choice of clock (frame, physics tick, fixed accumulator) entirely to the game.
+
+## Mutation During a Phase
+
+* The pipeline never iterates entities, so spawning, registering or removing entities during a phase is structurally safe.
+* Handlers expose snapshots of their collections, so modules may mutate their own state while that state is being iterated.
+* Structural changes performed during a phase take effect on subsequent ticks, not on the current one.
 
 # Area
 
