@@ -1,8 +1,12 @@
 # Entity Resolvers
 
-Resolvers interpret gameplay facts in the context of a single entity before they affect its state. Resolvers live under `entities/resolvers/` and belong to the entity: each entity owns one set of resolvers through its `EntityResolvers` facade, created at construction and accessed through `entity.get_resolvers()`.
+Resolvers interpret gameplay facts in the context of a single entity before they affect its state. Resolvers live under `entities/resolvers/` and belong to the entity: each entity owns one set of resolvers through its `EntityResolvers` facade, created at construction and accessed through `entity.resolvers`.
 
 Resolvers are not modules: they participate in no pipeline phase and have no lifecycle beyond their entity.
+
+# Resolver Base
+
+Resolvers extend the `Resolver` base class, defined in `entities/resolvers/resolver.gd`. It mirrors `Module`: the entity is assigned at construction and never changes, and it is held weakly, so the reference chain between an entity and its resolvers does not form a `RefCounted` cycle. See Entity back-references in ARCHITECTURE.md.
 
 # Contract
 
@@ -38,7 +42,7 @@ The base implementation returns the effect unchanged. Games replace the resolver
 The facade pre-creates base resolvers. Games replace them by assignment when they configure an entity:
 
 ```
-entity.get_resolvers().effect = FireEffectResolver.new(entity)
+entity.resolvers.effect = FireEffectResolver.new(entity)
 ```
 
 There is no dependency injection, registry or locator. Resolvers are constructed with their entity and access other modules through it at call time.

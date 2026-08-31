@@ -18,5 +18,5 @@ func test_status_module_owns_a_status() -> void:
 
 func test_entity_access_creates_the_status_module_lazily_and_reuses_it() -> void:
 	var entity := Entity.new("TestEntity")
-	var status := entity.get_modules().status.get_status()
-	assert_same(entity.get_modules().status.get_status(), status)
+	var status := entity.modules.status.get_status()
+	assert_same(entity.modules.status.get_status(), status)

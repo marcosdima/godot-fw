@@ -2,8 +2,17 @@ extends RefCounted
 class_name Modules
 
 
+## Weak reference to the entity these modules belong to, assigned at construction
+## and never changed. Held weakly so the Entity -> Modules -> Entity chain does
+## not form a RefCounted cycle that would prevent entities from ever being freed.
+var _entity: WeakRef
+
 ## The entity these modules belong to.
-var _entity: Entity
+var entity: Entity:
+	get:
+		if _entity == null:
+			return null
+		return _entity.get_ref()
 
 ## Every currently instantiated module. No semantic ordering.
 var _active: Array[Module] = []
@@ -23,14 +32,14 @@ var _progression: ProgressionModule
 
 ## Creates the modules facade for the given entity. No module is instantiated here.
 func _init(p_entity: Entity) -> void:
-	_entity = p_entity
+	_entity = weakref(p_entity)
 
 
 ## Returns the state module, creating and activating it on first access.
 var state: StateModule:
 	get:
 		if _state == null:
-			_state = StateModule.new(_entity)
+			_state = StateModule.new(entity)
 			_activate(_state)
 		return _state
 
@@ -39,7 +48,7 @@ var state: StateModule:
 var interaction: InteractionModule:
 	get:
 		if _interaction == null:
-			_interaction = InteractionModule.new(_entity)
+			_interaction = InteractionModule.new(entity)
 			_activate(_interaction)
 		return _interaction
 
@@ -48,7 +57,7 @@ var interaction: InteractionModule:
 var status: StatusModule:
 	get:
 		if _status == null:
-			_status = StatusModule.new(_entity)
+			_status = StatusModule.new(entity)
 			_activate(_status)
 		return _status
 
@@ -57,7 +66,7 @@ var status: StatusModule:
 var progression: ProgressionModule:
 	get:
 		if _progression == null:
-			_progression = ProgressionModule.new(_entity)
+			_progression = ProgressionModule.new(entity)
 			_activate(_progression)
 		return _progression
 

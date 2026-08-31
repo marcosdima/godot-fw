@@ -6,11 +6,11 @@ class_name Entity
 ## entity has its own identity. Not a final architectural decision.
 static var _next_id: int = 0
 
-## Modules owned by this entity. Written only at construction.
-var _modules: Modules
+## The modules facade owned by this entity. Written only at construction.
+var modules: Modules
 
-## Resolvers owned by this entity. Written only at construction.
-var _resolvers: EntityResolvers
+## The resolvers facade owned by this entity. Written only at construction.
+var resolvers: EntityResolvers
 
 ## The world this entity currently belongs to, or null.
 ## Written only by the World lifecycle methods through set_world coordination.
@@ -21,18 +21,8 @@ var _world: World = null
 func _init(p_name: String = "") -> void:
 	super(_next_id, p_name)
 	_next_id += 1
-	_modules = Modules.new(self)
-	_resolvers = EntityResolvers.new(self)
-
-
-## Returns the modules facade owned by this entity.
-func get_modules() -> Modules:
-	return _modules
-
-
-## Returns the resolvers facade owned by this entity.
-func get_resolvers() -> EntityResolvers:
-	return _resolvers
+	modules = Modules.new(self)
+	resolvers = EntityResolvers.new(self)
 
 
 ## Returns the world this entity currently belongs to, or null.

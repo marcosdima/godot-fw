@@ -17,5 +17,5 @@ func test_progression_module_owns_progression() -> void:
 
 func test_entity_access_creates_the_progression_module_lazily_and_reuses_it() -> void:
 	var entity := Entity.new("TestEntity")
-	var progression := entity.get_modules().progression.get_progression()
-	assert_same(entity.get_modules().progression.get_progression(), progression)
+	var progression := entity.modules.progression.get_progression()
+	assert_same(entity.modules.progression.get_progression(), progression)

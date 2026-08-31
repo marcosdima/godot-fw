@@ -183,6 +183,18 @@ unless there is a concrete architectural reason.
 
 If a requirement cannot be cleanly implemented using the current architecture, the preferred behavior is to propose alternatives and discuss the architectural change before implementing it.
 
+## Entity back-references
+
+Objects owned by an entity hold their reference back to it weakly.
+
+* `Module.entity` and `Resolver.entity` are weak references.
+* The `Modules` and `EntityResolvers` facades hold their entity weakly.
+* `EffectApplication.condition` is a weak reference to its owning condition.
+
+Owner-to-owned references remain strong: `Entity -> Modules`, `Entity -> EntityResolvers`, `Modules -> Module`, `EntityResolvers -> Resolver`.
+
+A strong back-reference would create a `RefCounted` cycle: the objects in the cycle would never reach a zero reference count and entities would never be freed. Owned objects die with their entity, so a weak back-reference is always valid while the owned object is alive.
+
 # Signals
 
 Systems may expose signals to notify other systems when relevant state changes occur.

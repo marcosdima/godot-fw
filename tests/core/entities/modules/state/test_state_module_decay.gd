@@ -4,8 +4,12 @@ extends GutTest
 enum TestConditionId { BURN }
 
 
+var _entity: Entity
+
+
 func _create_state_module() -> StateModule:
-	return Entity.new("TestEntity").get_modules().state
+	_entity = Entity.new("TestEntity")
+	return _entity.modules.state
 
 
 func test_condition_without_decay_remains_alive_indefinitely() -> void:

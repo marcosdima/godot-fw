@@ -2,8 +2,18 @@ extends RefCounted
 class_name Module
 
 
-## The entity this module belongs to. Assigned at construction and never changed.
-var entity: Entity
+## Weak reference to the entity this module belongs to, assigned at construction
+## and never changed. Held weakly so the Entity -> Modules -> Module -> Entity
+## chain does not form a RefCounted cycle that would prevent entities from ever
+## being freed.
+var _entity: WeakRef
+
+## The entity this module belongs to.
+var entity: Entity:
+	get:
+		if _entity == null:
+			return null
+		return _entity.get_ref()
 
 ## Connections made during attach(), disconnected during detach().
 var _phase_connections: Array[PhaseConnection] = []
@@ -11,7 +21,7 @@ var _phase_connections: Array[PhaseConnection] = []
 
 ## Creates a new module bound to the given entity.
 func _init(p_entity: Entity) -> void:
-	entity = p_entity
+	_entity = weakref(p_entity)
 
 
 ## Returns the pipeline phases this module participates in.

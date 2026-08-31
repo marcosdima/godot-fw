@@ -10,14 +10,17 @@ enum TestConditionId { BURN }
 enum TestApplicationId { FIRE_DAMAGE }
 
 
+var _entity: Entity
+
+
 func _create_state_module() -> StateModule:
-	var state_module := StateModule.new(Entity.new("TestEntity"))
-	state_module.entity.get_modules().status.get_status().add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 100.0))
-	return state_module
+	_entity = Entity.new("TestEntity")
+	_entity.modules.status.get_status().add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 100.0))
+	return _entity.modules.state
 
 
 func _get_health(state_module: StateModule) -> Attribute:
-	return state_module.entity.get_modules().status.get_status().get_attribute(TestAttributeId.HEALTH)
+	return state_module.entity.modules.status.get_status().get_attribute(TestAttributeId.HEALTH)
 
 
 func _create_burn_condition() -> Condition:

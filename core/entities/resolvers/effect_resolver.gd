@@ -1,14 +1,5 @@
-extends RefCounted
+extends Resolver
 class_name EffectResolver
-
-
-## The entity this resolver resolves for. Assigned at construction and never changed.
-var entity: Entity
-
-
-## Creates a new effect resolver bound to the given entity.
-func _init(p_entity: Entity) -> void:
-	entity = p_entity
 
 
 ## Resolves the given effect in the context of its entity and returns the effect to

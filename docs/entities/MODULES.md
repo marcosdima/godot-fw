@@ -8,7 +8,7 @@ Modules are optional capabilities of an entity. There are no default modules: `M
 
 * A `Module` belongs to exactly one `Entity`.
 * A module cannot be transferred between entities.
-* A module keeps a permanent reference to its entity.
+* A module keeps a weak reference to its entity, assigned at construction and never changed. Weak so the Entity -> Modules -> Module -> Entity chain does not form a `RefCounted` cycle that would prevent entities from ever being freed. See Entity back-references in ARCHITECTURE.md.
 * The entity owns its `Modules` object and delegates module lifecycle concerns to it.
 * The entity does not directly manage concrete modules; it communicates through `Modules`.
 
@@ -58,7 +58,7 @@ Module
 └── detach()
 ```
 
-`entity` is assigned when the module is constructed and cannot change.
+`entity` is assigned when the module is constructed and cannot change. It is held weakly; see Entity back-references in ARCHITECTURE.md.
 
 Modules declare their participation in the world update cycle by overriding `_get_phase_callbacks()`, which returns one `PhaseCallback` per participated phase: a pure data container holding the phase and the callback invoked when that phase runs. Base modules participate in none.
 
@@ -170,7 +170,7 @@ It is an ordinary lazy module and participates in no pipeline phase.
 
 # Entity Resolvers
 
-Resolvers are per-entity collaborators, not modules. They live under `entities/resolvers/`, are created with the entity and are accessed through `entity.get_resolvers()`. See RESOLVERS.md.
+Resolvers are per-entity collaborators, not modules. They live under `entities/resolvers/`, are created with the entity and are accessed through `entity.resolvers`. See RESOLVERS.md.
 
 # Folder Location
 

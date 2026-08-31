@@ -29,7 +29,7 @@ func test_resolver_is_bound_to_its_entity() -> void:
 
 func test_entity_provides_a_resolvers_facade_with_an_effect_resolver() -> void:
 	var entity := Entity.new("TestEntity")
-	assert_same(entity.get_resolvers().effect.entity, entity)
+	assert_same(entity.resolvers.effect.entity, entity)
 
 
 func test_subclass_can_modify_the_effect() -> void:

@@ -177,9 +177,9 @@ func test_get_interactions_returns_same_instances_in_insertion_order() -> void:
 
 func test_modules_facade_creates_interaction_module_lazily() -> void:
 	var entity := _create_entity()
-	var interaction_module := entity.get_modules().interaction
+	var interaction_module := entity.modules.interaction
 	assert_not_null(interaction_module)
-	assert_same(interaction_module, entity.get_modules().interaction)
+	assert_same(interaction_module, entity.modules.interaction)
 
 
 func test_shared_interaction_keeps_focus_independent_per_entity() -> void:
@@ -187,8 +187,8 @@ func test_shared_interaction_keeps_focus_independent_per_entity() -> void:
 	var other := _create_interaction("other")
 	var entity_a := _create_entity()
 	var entity_b := _create_entity()
-	var module_a := entity_a.get_modules().interaction
-	var module_b := entity_b.get_modules().interaction
+	var module_a := entity_a.modules.interaction
+	var module_b := entity_b.modules.interaction
 	module_a.add(shared)
 	module_a.add(other)
 	module_b.add(shared)
