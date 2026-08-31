@@ -41,7 +41,7 @@ func register_entity(entity: Entity) -> void:
 		return
 	entity_handler.add_entity(entity)
 	entity._world = self
-	entity.get_modules().attach_all()
+	entity.modules.attach_all()
 
 
 ## Removes an entity from this world, detaching its active modules and clearing its world.
@@ -50,6 +50,6 @@ func remove_entity(entity: Entity) -> void:
 	if entity.get_world() != self:
 		push_error("Entity %d does not belong to this world" % entity.id)
 		return
-	entity.get_modules().detach_all()
+	entity.modules.detach_all()
 	entity_handler.remove_entity(entity)
 	entity._world = null

@@ -2,11 +2,13 @@ extends GutTest
 
 
 enum TestAttributeId { HEALTH }
+enum TestEffectKind { FIRE }
 enum TestApplicationId { DAMAGE }
 
 
-func test_stores_target_and_value() -> void:
-	var effect := Effect.new(TestAttributeId.HEALTH, -5.0)
+func test_stores_kind_target_and_value() -> void:
+	var effect := Effect.new(TestEffectKind.FIRE, TestAttributeId.HEALTH, -5.0)
+	assert_eq(effect.kind, TestEffectKind.FIRE)
 	assert_eq(effect.target, TestAttributeId.HEALTH)
 	assert_eq(effect.value, -5.0)
 

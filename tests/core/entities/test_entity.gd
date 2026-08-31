@@ -36,3 +36,14 @@ func test_entity_handler_get_entities_returns_all() -> void:
 	handler.add_entity(Entity.new("First"))
 	handler.add_entity(Entity.new("Second"))
 	assert_eq(handler.get_entities().size(), 2)
+
+
+func test_entity_is_freed_with_its_modules_and_resolvers_when_the_last_reference_is_dropped() -> void:
+	var entity := Entity.new("Mortal")
+	var entity_ref: WeakRef = weakref(entity)
+	var module_ref: WeakRef = weakref(entity.modules.state)
+	var resolver_ref: WeakRef = weakref(entity.resolvers.effect)
+	entity = null
+	assert_null(entity_ref.get_ref())
+	assert_null(module_ref.get_ref())
+	assert_null(resolver_ref.get_ref())

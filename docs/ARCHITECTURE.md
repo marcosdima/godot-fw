@@ -19,9 +19,13 @@ project/
 │   ├── entities/
 │   │   ├── entity.gd
 │   │   ├── entity_handler.gd
+│   │   ├── resolvers/
 │   │   └── modules/
 │   │       ├── interaction/
-│   │       └── state/
+│   │       ├── progression/
+│   │       ├── rules/
+│   │       ├── state/
+│   │       └── status/
 │   ├── primitives/
 │   └── world/
 │       ├── area.gd
@@ -39,13 +43,18 @@ The exact internal structure of `core` and `game` may evolve as the architecture
 
 Architecture-specific decisions live in focused documents. This file holds the entry point, the transversal decisions and the general principles.
 
-* [PRIMITIVES.md](PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
-* [MODULES.md](MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
-* [INTERACTION.md](INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
-* [STATE_MODULE.md](STATE_MODULE.md): State domain: attributes, modifiers, conditions, effects, effect applications and the state update cycle.
-* [RULES.md](RULES.md): Rules domain: condition interactions, generic rule implementations, evaluation and priority.
-* [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
-* [ENTITIES.md](ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
+The documentation tree mirrors the `core/` folder structure; transversal documents live at the root.
+
+* [PRIMITIVES.md](primitives/PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
+* [ENTITIES.md](entities/ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
+* [MODULES.md](entities/MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
+* [RESOLVERS.md](entities/RESOLVERS.md): Entity resolvers: interpreting conditions and effects in the context of an entity.
+* [INTERACTION.md](entities/modules/INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
+* [STATE_MODULE.md](entities/modules/state/STATE_MODULE.md): State domain: conditions, effects, effect applications, signals and the state update cycle.
+* [STATUS_MODULE.md](entities/modules/status/STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
+* [PROGRESSION.md](entities/modules/progression/PROGRESSION.md): Progression domain: progression values as a per-entity capability.
+* [RULES.md](entities/modules/rules/RULES.md): Rules domain: reactive per-entity relations that react to module facts.
+* [WORLD.md](world/WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
 * [BRANCHES.md](BRANCHES.md): Branch categories: contracts of experiments and prototypes towards `core`, naming conventions and active branches.
 
 
@@ -70,8 +79,9 @@ Game-specific implementations belong in `game`.
 Examples:
 
 * Concrete conditions such as `BurnCondition` or `WetCondition`.
-* Game-specific rule definitions that bind rules to game conditions, such as `CancelRule(Burn)` or `WeakenRule(Burn, Wet)`.
-* Game-specific effects.
+* Game-specific effect kinds and identifiers.
+* Game-specific resolvers, such as an effect resolver reduced by fire resistance.
+* Game-specific rule definitions, such as a rule that removes Burn while Wet is present.
 * Game-specific entities.
 * Game-specific attributes.
 * Game-specific UI.
@@ -111,7 +121,7 @@ is appropriate because `Attribute` is genuinely a specialized identifiable eleme
 
 Generic systems must not contain knowledge of concrete game mechanics.
 
-For example, `StateModule` may manage conditions, effects and rules, but it must not contain logic specifically referring to `Burn`, `Wet`, `Poison`, or other game-specific concepts.
+For example, `StateModule` may manage conditions and effects, but it must not contain logic specifically referring to `Burn`, `Wet`, `Poison`, or other game-specific concepts.
 
 Game-specific behavior must be expressed through the abstractions provided by `core`.
 
@@ -122,7 +132,7 @@ Game-specific identifiers must not be represented by unexplained numeric literal
 Do not write:
 
 ```
-Effect.new(1, -0.5)
+Effect.new(1, AttributeId.HEALTH, -0.5)
 ```
 
 when the number represents a game concept.
@@ -137,12 +147,17 @@ enum AttributeId {
     SPEED,
     STRENGTH,
 }
+
+enum EffectKind {
+    FIRE,
+    POISON,
+}
 ```
 
 Then:
 
 ```
-Effect.new(AttributeId.HEALTH, -0.5)
+Effect.new(EffectKind.FIRE, AttributeId.HEALTH, -0.5)
 ```
 
 The generic `core` systems may store identifiers without knowing their game-specific meaning.
@@ -168,15 +183,24 @@ unless there is a concrete architectural reason.
 
 If a requirement cannot be cleanly implemented using the current architecture, the preferred behavior is to propose alternatives and discuss the architectural change before implementing it.
 
+## Entity back-references
+
+Objects owned by an entity hold their reference back to it weakly.
+
+* `Module.entity` and `Resolver.entity` are weak references.
+* The `Modules` and `EntityResolvers` facades hold their entity weakly.
+* `EffectApplication.condition` is a weak reference to its owning condition.
+
+Owner-to-owned references remain strong: `Entity -> Modules`, `Entity -> EntityResolvers`, `Modules -> Module`, `EntityResolvers -> Resolver`.
+
+A strong back-reference would create a `RefCounted` cycle: the objects in the cycle would never reach a zero reference count and entities would never be freed. Owned objects die with their entity, so a weak back-reference is always valid while the owned object is alive.
+
 # Signals
 
 Systems may expose signals to notify other systems when relevant state changes occur.
 
-Examples include:
+`StateModule` currently emits `condition_added`, `condition_removed` and `effect_applied`. Other examples, not yet implemented, include:
 
-* `condition_added`
-* `condition_removed`
-* `effect_applied`
 * `modifier_added`
 * `modifier_removed`
 
@@ -192,11 +216,11 @@ A global event bus may be considered later if a concrete architectural need for 
 
 Deliberately deferred architectural possibilities. Do not implement these until a concrete need appears.
 
-* WorldConfig/World integration with StateModule rules: automatically supplying world-level rules to StateModules, if it requires additional coupling. Example: IdleRule(Burn) decreasing Burn intensity over time as a world rule, while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
-* Concrete game rule definitions binding core rules to game conditions. Example: CancelRule(Burn), WeakenRule(Burn, Wet). Pending game condition definitions.
-* Rules that create Conditions. Example: Wet + Cold -> Sick.
-* Rules affecting Attributes or Effects.
+* Ordering guarantees across rules reacting to the same fact, if a game ever needs two rules on the same signal with a defined order. Rules today react in connection order.
+* Built-in generic rule implementations in core, if a recurring reaction pattern emerges across games. The semantics currently belong to the game.
+* Sustained condition modulation (for example, weakening a condition while another state is present). Today this is expressed by composing discrete reactions; if that proves insufficient, the next piece should be a condition modifier abstraction, not a rule engine.
 * Condition/intensity manipulation beyond the current intensity-only model.
+* Modifier expiry: giving modifiers a lifetime within the update cycle, probably through a StatusModule phase callback.
 * TagModule: possible future capability for tagging entities. Not part of the current implementation.
 * Time-dependent phases: extending the phase signal contract with delta/time once the first time-based module appears. STATE remains intentionally tick-based until then.
 * Explicit participant priority within a phase, if a second STATE participant ever makes connection order relevant.

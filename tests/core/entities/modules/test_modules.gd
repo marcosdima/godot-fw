@@ -10,20 +10,20 @@ func _create_entity() -> Entity:
 
 func test_no_modules_are_instantiated_by_default() -> void:
 	var entity := _create_entity()
-	assert_eq(entity.get_modules()._active.size(), 0)
+	assert_eq(entity.modules._active.size(), 0)
 
 
 func test_state_module_is_created_lazily_on_first_access() -> void:
 	var entity := _create_entity()
-	var state := entity.get_modules().state
+	var state := entity.modules.state
 	assert_not_null(state)
-	assert_same(state, entity.get_modules().state)
+	assert_same(state, entity.modules.state)
 
 
 func test_attach_runs_on_lazy_creation_even_without_world() -> void:
 	var entity := _create_entity()
 	assert_null(entity.get_world())
-	entity.get_modules().state.add_condition(Condition.new(TestConditionId.BURN, "Burn", 10.0))
+	entity.modules.state.add_condition(Condition.new(TestConditionId.BURN, "Burn", 10.0))
 	assert_true(true)
 
 
@@ -32,12 +32,12 @@ func test_state_persists_across_world_change() -> void:
 	var world_a := World.new()
 	var world_b := World.new()
 	entity.set_world(world_a)
-	entity.get_modules().state.add_condition(Condition.new(TestConditionId.BURN, "Burn", 10.0))
+	entity.modules.state.add_condition(Condition.new(TestConditionId.BURN, "Burn", 10.0))
 	entity.set_world(world_b)
 	assert_false(world_a.entity_handler.contains(entity.id))
 	assert_true(world_b.entity_handler.contains(entity.id))
 	assert_eq(entity.get_world(), world_b)
-	var state := entity.get_modules().state
+	var state := entity.modules.state
 	assert_eq(state.get_condition_handler().get_condition(TestConditionId.BURN).intensity, 10.0)
 	state.tick()
 	assert_eq(state.get_condition_handler().get_condition(TestConditionId.BURN).intensity, 10.0)

@@ -4,73 +4,57 @@ extends GutTest
 const ConstantApplication := preload("res://tests/helpers/constant_application.gd")
 
 
-enum TestAttributeId { HEALTH, MISSING }
+enum TestAttributeId { HEALTH }
+enum TestEffectKind { FIRE }
 enum TestApplicationId { DAMAGE }
 
 
-func _create_status() -> Status:
-	var status := Status.new()
-	status.add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 100.0))
-	return status
+func _create_damage_application(p_rate: int = 1) -> EffectApplication:
+	return ConstantApplication.new(TestApplicationId.DAMAGE, "Damage", p_rate, Effect.new(TestEffectKind.FIRE, TestAttributeId.HEALTH, -5.0))
 
 
-func test_apply_effect_modifies_current_value_through_status() -> void:
+func test_process_returns_no_effects_without_applications() -> void:
 	var handler := EffectHandler.new()
-	var status := _create_status()
-	handler.apply_effect(Effect.new(TestAttributeId.HEALTH, -5.0), status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 95.0)
+	assert_eq(handler.process().size(), 0)
 
 
-func test_apply_effect_respects_attribute_min_value() -> void:
+func test_process_returns_the_effect_when_the_rate_is_reached() -> void:
 	var handler := EffectHandler.new()
-	var status := Status.new()
-	status.add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 10.0, 0.0))
-	handler.apply_effect(Effect.new(TestAttributeId.HEALTH, -40.0), status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 0.0)
+	handler.add(_create_damage_application(2))
+	assert_eq(handler.process().size(), 0)
+	var effects := handler.process()
+	assert_eq(effects.size(), 1)
+	assert_eq(effects[0].kind, TestEffectKind.FIRE)
+	assert_eq(effects[0].target, TestAttributeId.HEALTH)
+	assert_eq(effects[0].value, -5.0)
 
 
-func test_apply_effect_ignores_unknown_target() -> void:
+func test_process_returns_the_effect_of_rate_one_applications_every_tick() -> void:
 	var handler := EffectHandler.new()
-	var status := _create_status()
-	handler.apply_effect(Effect.new(TestAttributeId.MISSING, -5.0), status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 100.0)
+	handler.add(_create_damage_application(1))
+	assert_eq(handler.process().size(), 1)
+	assert_eq(handler.process().size(), 1)
 
 
-func test_process_fires_application_at_its_rate() -> void:
+func test_submit_instant_returns_its_effect_once_on_the_next_process() -> void:
 	var handler := EffectHandler.new()
-	var status := _create_status()
-	handler.add(ConstantApplication.new(TestApplicationId.DAMAGE, "Damage", 2, Effect.new(TestAttributeId.HEALTH, -5.0)))
-	handler.process(status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 100.0)
-	handler.process(status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 95.0)
+	handler.submit_instant(_create_damage_application(1))
+	var effects := handler.process()
+	assert_eq(effects.size(), 1)
+	assert_eq(effects[0].target, TestAttributeId.HEALTH)
+	assert_eq(handler.process().size(), 0)
 
 
-func test_process_fires_rate_one_application_every_tick() -> void:
+func test_applications_without_effect_generate_nothing() -> void:
 	var handler := EffectHandler.new()
-	var status := _create_status()
-	handler.add(ConstantApplication.new(TestApplicationId.DAMAGE, "Damage", 1, Effect.new(TestAttributeId.HEALTH, -5.0)))
-	handler.process(status)
-	handler.process(status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 90.0)
-
-
-func test_submit_instant_applies_once_on_next_process() -> void:
-	var handler := EffectHandler.new()
-	var status := _create_status()
-	handler.submit_instant(ConstantApplication.new(TestApplicationId.DAMAGE, "Damage", 1, Effect.new(TestAttributeId.HEALTH, -5.0)))
-	handler.process(status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 95.0)
-	handler.process(status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 95.0)
+	handler.add(EffectApplication.new(TestApplicationId.DAMAGE, "Damage", 1))
+	assert_eq(handler.process().size(), 0)
 
 
 func test_remove_applications_stops_processing() -> void:
 	var handler := EffectHandler.new()
-	var status := _create_status()
-	var application := ConstantApplication.new(TestApplicationId.DAMAGE, "Damage", 1, Effect.new(TestAttributeId.HEALTH, -5.0))
+	var application := _create_damage_application(1)
 	handler.add(application)
 	var applications: Array[EffectApplication] = [application]
 	handler.remove_applications(applications)
-	handler.process(status)
-	assert_eq(status.get_attribute(TestAttributeId.HEALTH).current_value, 100.0)
+	assert_eq(handler.process().size(), 0)
