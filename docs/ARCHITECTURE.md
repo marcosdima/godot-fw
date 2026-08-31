@@ -19,10 +19,14 @@ project/
 │   ├── entities/
 │   │   ├── entity.gd
 │   │   ├── entity_handler.gd
+│   │   ├── resolvers/
 │   │   └── modules/
 │   │       ├── interaction/
-│   │       └── state/
+│   │       ├── progression/
+│   │       ├── state/
+│   │       └── status/
 │   ├── primitives/
+│   ├── rules/
 │   └── world/
 │       ├── area.gd
 │       ├── update_pipeline.gd
@@ -42,8 +46,11 @@ Architecture-specific decisions live in focused documents. This file holds the e
 * [PRIMITIVES.md](PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
 * [MODULES.md](MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
 * [INTERACTION.md](INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
-* [STATE_MODULE.md](STATE_MODULE.md): State domain: attributes, modifiers, conditions, effects, effect applications and the state update cycle.
-* [RULES.md](RULES.md): Rules domain: condition interactions, generic rule implementations, evaluation and priority.
+* [STATE_MODULE.md](STATE_MODULE.md): State domain: conditions, effects, effect applications, signals and the state update cycle.
+* [STATUS_MODULE.md](STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
+* [PROGRESSION.md](PROGRESSION.md): Progression domain: progression values as a per-entity capability.
+* [RESOLVERS.md](RESOLVERS.md): Entity resolvers: interpreting conditions and effects in the context of an entity.
+* [RULES.md](RULES.md): Rules domain: an independent system for condition interactions, generic rule implementations and priority.
 * [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
 * [ENTITIES.md](ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
 * [BRANCHES.md](BRANCHES.md): Branch categories: contracts of experiments and prototypes towards `core`, naming conventions and active branches.
@@ -70,8 +77,9 @@ Game-specific implementations belong in `game`.
 Examples:
 
 * Concrete conditions such as `BurnCondition` or `WetCondition`.
+* Game-specific effect kinds and identifiers.
+* Game-specific resolvers, such as an effect resolver reduced by fire resistance.
 * Game-specific rule definitions that bind rules to game conditions, such as `CancelRule(Burn)` or `WeakenRule(Burn, Wet)`.
-* Game-specific effects.
 * Game-specific entities.
 * Game-specific attributes.
 * Game-specific UI.
@@ -111,7 +119,7 @@ is appropriate because `Attribute` is genuinely a specialized identifiable eleme
 
 Generic systems must not contain knowledge of concrete game mechanics.
 
-For example, `StateModule` may manage conditions, effects and rules, but it must not contain logic specifically referring to `Burn`, `Wet`, `Poison`, or other game-specific concepts.
+For example, `StateModule` may manage conditions and effects, but it must not contain logic specifically referring to `Burn`, `Wet`, `Poison`, or other game-specific concepts.
 
 Game-specific behavior must be expressed through the abstractions provided by `core`.
 
@@ -172,11 +180,8 @@ If a requirement cannot be cleanly implemented using the current architecture, t
 
 Systems may expose signals to notify other systems when relevant state changes occur.
 
-Examples include:
+`StateModule` currently emits `condition_added`, `condition_removed` and `effect_applied`. Other examples, not yet implemented, include:
 
-* `condition_added`
-* `condition_removed`
-* `effect_applied`
 * `modifier_added`
 * `modifier_removed`
 
@@ -192,11 +197,12 @@ A global event bus may be considered later if a concrete architectural need for 
 
 Deliberately deferred architectural possibilities. Do not implement these until a concrete need appears.
 
-* WorldConfig/World integration with StateModule rules: automatically supplying world-level rules to StateModules, if it requires additional coupling. Example: IdleRule(Burn) decreasing Burn intensity over time as a world rule, while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
+* Rules evaluation: an evaluator that applies rules to entity conditions at the world or game level, since rules no longer run inside StateModule. Example: a world-level WeakenRule(Burn, Wet), while a Blaze defines an entity-specific CancelRule(Burn) that reacts to the resulting state.
 * Concrete game rule definitions binding core rules to game conditions. Example: CancelRule(Burn), WeakenRule(Burn, Wet). Pending game condition definitions.
 * Rules that create Conditions. Example: Wet + Cold -> Sick.
 * Rules affecting Attributes or Effects.
 * Condition/intensity manipulation beyond the current intensity-only model.
+* Modifier expiry: giving modifiers a lifetime within the update cycle, probably through a StatusModule phase callback.
 * TagModule: possible future capability for tagging entities. Not part of the current implementation.
 * Time-dependent phases: extending the phase signal contract with delta/time once the first time-based module appears. STATE remains intentionally tick-based until then.
 * Explicit participant priority within a phase, if a second STATE participant ever makes connection order relevant.

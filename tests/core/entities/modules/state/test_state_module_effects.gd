@@ -5,23 +5,24 @@ const ConstantApplication := preload("res://tests/helpers/constant_application.g
 
 
 enum TestAttributeId { HEALTH }
+enum TestEffectKind { FIRE }
 enum TestConditionId { BURN }
 enum TestApplicationId { FIRE_DAMAGE }
 
 
 func _create_state_module() -> StateModule:
 	var state_module := StateModule.new(Entity.new("TestEntity"))
-	state_module.get_status().add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 100.0))
+	state_module.entity.get_modules().status.get_status().add_attribute(Attribute.new(TestAttributeId.HEALTH, "Health", 100.0))
 	return state_module
 
 
 func _get_health(state_module: StateModule) -> Attribute:
-	return state_module.get_status().get_attribute(TestAttributeId.HEALTH)
+	return state_module.entity.get_modules().status.get_status().get_attribute(TestAttributeId.HEALTH)
 
 
 func _create_burn_condition() -> Condition:
 	var condition := Condition.new(TestConditionId.BURN, "Burn", 10.0)
-	condition.add_effect_application(ConstantApplication.new(TestApplicationId.FIRE_DAMAGE, "FireDamage", 1, Effect.new(TestAttributeId.HEALTH, -5.0)))
+	condition.add_effect_application(ConstantApplication.new(TestApplicationId.FIRE_DAMAGE, "FireDamage", 1, Effect.new(TestEffectKind.FIRE, TestAttributeId.HEALTH, -5.0)))
 	return condition
 
 
@@ -35,7 +36,7 @@ func test_condition_applications_fire_repeatedly_across_ticks() -> void:
 
 func test_instant_submission_applies_once() -> void:
 	var state_module := _create_state_module()
-	state_module.get_effect_handler().submit_instant(ConstantApplication.new(TestApplicationId.FIRE_DAMAGE, "FireDamage", 1, Effect.new(TestAttributeId.HEALTH, -5.0)))
+	state_module.get_effect_handler().submit_instant(ConstantApplication.new(TestApplicationId.FIRE_DAMAGE, "FireDamage", 1, Effect.new(TestEffectKind.FIRE, TestAttributeId.HEALTH, -5.0)))
 	state_module.tick()
 	assert_eq(_get_health(state_module).current_value, 95.0)
 	state_module.tick()

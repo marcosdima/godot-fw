@@ -54,6 +54,14 @@ func test_add_and_get_effect_applications() -> void:
 	assert_true(condition.get_effect_applications().has(application))
 
 
+func test_add_effect_application_binds_the_condition() -> void:
+	var condition := Condition.new(TestConditionId.BURN, "Burn", 10.0)
+	var application := EffectApplication.new(TestApplicationId.FIRE_DAMAGE, "FireDamage")
+	assert_null(application.condition)
+	condition.add_effect_application(application)
+	assert_same(application.condition, condition)
+
+
 func test_condition_handler_add_get_remove() -> void:
 	var handler := ConditionHandler.new()
 	var condition := Condition.new(TestConditionId.BURN, "Burn", 10.0)

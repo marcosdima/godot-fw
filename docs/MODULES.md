@@ -18,8 +18,9 @@ Conceptually:
 Entity
 └── Modules
     ├── state
-    ├── movement
-    ├── ...
+    ├── status
+    ├── progression
+    ├── interaction
     └── _active
 ```
 
@@ -147,11 +148,29 @@ It is an ordinary lazy module: created on first access like any other module.
 
 Its update cycle runs through the world update cycle: the module participates in `UpdatePipeline.Phase.STATE` with its `tick()` method. `tick()` remains available for driving the module directly, which is how state logic is exercised without a world.
 
+It resolves added conditions and generated effects through the entity's resolvers, see RESOLVERS.md, and emits signals about what happened.
+
 # InteractionModule
 
 `InteractionModule` is the interaction capability of an entity. See INTERACTION.md for the complete model.
 
 It maintains the available interactions and the currently focused one. It is an ordinary lazy module and does not connect to world context.
+
+# StatusModule
+
+`StatusModule` is the status capability of an entity. See STATUS_MODULE.md for its internal responsibilities.
+
+It is an ordinary lazy module and participates in no pipeline phase.
+
+# ProgressionModule
+
+`ProgressionModule` is the progression capability of an entity. See PROGRESSION.md.
+
+It is an ordinary lazy module and participates in no pipeline phase.
+
+# Entity Resolvers
+
+Resolvers are per-entity collaborators, not modules. They live under `entities/resolvers/`, are created with the entity and are accessed through `entity.get_resolvers()`. See RESOLVERS.md.
 
 # Folder Location
 

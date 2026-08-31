@@ -2,7 +2,7 @@
 
 `StateModule` is the state capability of an entity, implemented as a Module. See MODULES.md for the module model.
 
-It represents the current state of an entity.
+It manages the conditions acquired by an entity, their lifecycle and the processing of their effect applications.
 
 State remains optional: entities that never access their state module simply do not have one.
 
@@ -18,72 +18,17 @@ Conceptually:
 Entity
 └── Modules
     └── StateModule
-        ├── Status
         ├── ConditionHandler
-        ├── EffectHandler
-        └── RuleHandler
+        └── EffectHandler
 ```
+
+The entity's quantitative state lives in `StatusModule`, see STATUS_MODULE.md. Rules are an independent system that does not live inside the state module, see RULES.md.
 
 `StateModule` should not depend on concrete game-specific types.
 
 The handlers used by the state module are built on the generic `Handler` primitive. See PRIMITIVES.md.
 
-## Status
-
-`Status` represents the current values of an entity's attributes.
-
-Conceptually:
-
-```
-Status
-└── Attribute
-    ├── base_value
-    ├── current_value
-    └── modifiers
-```
-
-Examples of possible attributes:
-
-* Health
-* Speed
-* Strength
-
-The actual attributes used by a game are game-specific.
-
-## Attribute
-
-An `Attribute` represents a measurable property of an entity.
-
-An attribute has a base value and may have modifiers.
-
-The base value should represent the underlying value.
-
-`base_value` represents the original value and is never modified by the state module.
-
-`current_value` represents the mutable current state of the attribute. Effects modify `current_value`.
-
-Modifiers do not modify `current_value` directly. The effective value is calculated separately from `current_value` and the active modifiers.
-
-## Modifier
-
-A `Modifier` represents a temporary or contextual modification to an `Attribute`.
-
-For example:
-
-```
-Speed
-base_value = 100
-
-Slow modifier = -40
-
-effective value = 60
-```
-
-When the modifier expires or is removed, the attribute returns to its previous effective value.
-
-Modifiers should not permanently alter the underlying attribute value.
-
-The exact lifetime and interaction rules for modifiers are not yet finalized.
+The entity's quantitative state (attributes, modifiers and their values) lives in `StatusModule`. See STATUS_MODULE.md.
 
 # Conditions
 
@@ -127,7 +72,7 @@ When a condition reaches a state where its intensity is no longer sufficient to 
 
 A condition is alive while its intensity is greater than its death threshold. `Condition.is_alive()` is defined as `intensity > death_threshold` and encapsulates this rule so that `StateModule` does not need to know how condition lifetime is represented. `StateModule` must use `is_alive()` instead of directly checking intensity.
 
-The default death threshold is `0.1` (`Condition.DEFAULT_DEATH_THRESHOLD`). Proportional intensity reductions, such as those performed by `IdleRule` or `WeakenRule`, approach zero without ever reaching it. The death threshold defines when the remaining intensity is no longer sufficient to remain alive.
+The default death threshold is `0.1` (`Condition.DEFAULT_DEATH_THRESHOLD`). A condition decays by its `decay_rate` on every state module tick. A decay rate of `0.0` means the condition does not decay on its own. Decay is the way conditions expire: registering rules is never required for a condition to be able to die.
 
 A condition whose intensity is at or below its death threshold when it is added is removed on the next state module tick without being activated.
 
@@ -139,12 +84,15 @@ An `Effect` is a transient data representation of an effect applied at a particu
 
 It contains information such as:
 
+* gameplay kind;
 * target identifier;
 * value.
 
 An `Effect` should remain a lightweight data object and should not contain complex behavior.
 
-An `Effect` must not reference an `Attribute`, `Status`, or `Entity`. It only carries the target identifier and the value to apply.
+An `Effect` must not reference an `Attribute`, `Status`, or `Entity`. It only carries the kind, the target identifier and the value to apply.
+
+The `kind` identifies the gameplay semantics of the effect, such as a damage type. Core stores the kind without interpreting it; concrete kinds are defined by the game.
 
 Once processed, an `Effect` does not need to remain registered.
 
@@ -165,6 +113,8 @@ The concrete meaning of an effect is determined by the system processing it.
 It is the persistent/process-level abstraction. It can persist across multiple `StateModule` ticks.
 
 It may belong to a `Condition`, but does not inherently require one. It may also represent an instant effect submitted directly to `EffectHandler`.
+
+An application added to a condition is bound to it: `application.condition` returns the owning condition, or null for instant applications. Concrete applications may calculate their effects from the condition's intensity. The binding is held weakly so the condition and its applications do not form a reference cycle.
 
 Its rate is expressed in `StateModule` ticks, not seconds.
 
@@ -218,31 +168,45 @@ The state module manages its collections through specialized handlers built on t
 
 `EffectHandler` remains a `Handler` because it stores active `EffectApplication`s and their processing state.
 
-It processes applications on `StateModule` ticks.
-
-It generates and processes `Effect`s.
-
-It resolves `Effect` targets through `Status` and applies them to the corresponding `Attribute`s.
+It processes applications on `StateModule` ticks and returns the `Effect`s generated on each tick. It does not resolve targets or modify attributes.
 
 Applications associated with a `Condition` are removed when that `Condition` is removed.
 
-`ConditionHandler` provides typed access to conditions. The evaluation contract of `RuleHandler` is documented in RULES.md.
+`ConditionHandler` provides typed access to conditions.
+
+# Effect Processing
+
+The flow of an effect is:
+
+```
+EffectApplication -> Effect -> EffectResolver -> Status
+```
+
+`StateModule` resolves each generated effect through the entity's `EffectResolver`, see RESOLVERS.md, and applies the resolved effect through `Status.modify_attribute`. Rejected effects are not applied.
+
+# Signals
+
+`StateModule` emits signals describing facts that already happened:
+
+* `condition_added(condition)`: emitted after a condition has been added, reporting the resolved condition.
+* `condition_removed(condition)`: emitted after a condition has been removed.
+* `effect_applied(effect)`: emitted after a resolved effect has been applied to the entity's status, reporting the applied effect.
+
+Rejected conditions and effects do not emit signals. Consumers connect directly to the state module of the entity they are interested in.
 
 # Update Cycle
 
 The conceptual update order is:
 
 ```
-1. Evaluate rules.
+1. Apply condition decay.
 2. Remove conditions that are no longer alive, together with their registered effect applications.
 3. Activate newly active conditions.
 4. Register their effect applications.
-5. Apply effects according to their applications.
+5. Process effect applications: generate effects, resolve them through the entity's EffectResolver and apply the results to the entity's status.
 ```
 
-Conditions brought to a dead state by rules exit the circuit at step 2, before their effect applications are processed in that same tick.
-
-Rules are evaluated at step 1. Their inputs, effects, evaluation order and priority contract are documented in RULES.md.
+Conditions brought to a dead state by decay exit the circuit at step 2, before their effect applications are processed in that same tick.
 
 The exact implementation may evolve.
 

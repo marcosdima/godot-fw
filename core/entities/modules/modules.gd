@@ -14,6 +14,12 @@ var _state: StateModule
 ## Backing field of the lazy interaction module.
 var _interaction: InteractionModule
 
+## Backing field of the lazy status module.
+var _status: StatusModule
+
+## Backing field of the lazy progression module.
+var _progression: ProgressionModule
+
 
 ## Creates the modules facade for the given entity. No module is instantiated here.
 func _init(p_entity: Entity) -> void:
@@ -36,6 +42,24 @@ var interaction: InteractionModule:
 			_interaction = InteractionModule.new(_entity)
 			_activate(_interaction)
 		return _interaction
+
+
+## Returns the status module, creating and activating it on first access.
+var status: StatusModule:
+	get:
+		if _status == null:
+			_status = StatusModule.new(_entity)
+			_activate(_status)
+		return _status
+
+
+## Returns the progression module, creating and activating it on first access.
+var progression: ProgressionModule:
+	get:
+		if _progression == null:
+			_progression = ProgressionModule.new(_entity)
+			_activate(_progression)
+		return _progression
 
 
 ## Detaches every active module. Used when the entity leaves its current world context.

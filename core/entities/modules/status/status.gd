@@ -29,3 +29,13 @@ func has_attribute(attribute_id: int) -> bool:
 ## Returns all attributes in this status.
 func get_attributes() -> Array[Attribute]:
 	return _attributes.values()
+
+
+## Adds the given delta to the current value of the attribute with the given identifier.
+## Returns true if the attribute exists and was modified.
+func modify_attribute(attribute_id: int, delta: float) -> bool:
+	var attribute := get_attribute(attribute_id)
+	if attribute == null:
+		return false
+	attribute.current_value += delta
+	return true

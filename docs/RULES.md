@@ -4,6 +4,8 @@
 
 Rules exist to prevent condition interactions from being hardcoded into the state module.
 
+Rules are an independent system. They live in `core/rules/`, depend only on conditions and are not owned or evaluated by `StateModule`. Nothing in `core` evaluates rules yet.
+
 For example, the interaction between `Burn` and `Wet` should not be implemented as:
 
 ```
@@ -27,11 +29,9 @@ Rules operate on the conditions owned by a `StateModule`. See STATE_MODULE.md fo
 
 ## Scope
 
-Rules operate at the `StateModule` level.
+Rules operate on the conditions of an entity's state module, obtained through its condition handler.
 
-A `StateModule` may have its own rules, specific to that entity.
-
-The `World` may eventually define a set of general rules applicable to StateModules. See Future in ARCHITECTURE.md.
+The `World` may eventually define a set of general rules applicable to entities. See Future in ARCHITECTURE.md.
 
 Rules must not depend on `Entity` or `World`.
 
@@ -55,19 +55,25 @@ Proportional reductions such as those performed by `IdleRule` or `WeakenRule` do
 
 When a rule brings a condition to an intensity that is no longer alive, that condition and its effect applications leave the circuit before effect applications are processed in that same tick.
 
+## Condition Expiry Is Not a Rule
+
+Conditions expire on their own through decay, see STATE_MODULE.md. Registering rules is never required for a condition to be able to expire.
+
+The former `IdleRule` was removed when rules were decoupled from the state module: its behavior is now the built-in condition decay.
+
 ## Evaluation
 
-The `StateModule` evaluates rules sequentially, in priority order.
-
-Each rule receives the current conditions and may modify their intensity directly.
+Rules are not evaluated inside the state module. An evaluator applies rules sequentially, in priority order, over the current conditions.
 
 Rules evaluated later observe modifications made by rules evaluated earlier.
+
+Who provides the evaluator is deliberately deferred until a concrete need exists. See Future in ARCHITECTURE.md.
 
 ## Priority
 
 Rules have an integer priority. Higher numeric priority executes first.
 
-Ordering is deterministic and shared by all StateModules. Rules with equal priority are ordered by ascending identifier.
+Ordering is deterministic. Rules with equal priority are ordered by ascending identifier.
 
 Registration order must not affect evaluation order.
 
@@ -79,11 +85,10 @@ It provides evaluation order through `get_rules_by_priority()`: rules sorted by 
 
 ## Generic Implementations
 
-The generic rule implementations `IdleRule`, `WeakenRule` and `CancelRule` belong to `core`.
+The generic rule implementations `WeakenRule` and `CancelRule` belong to `core`.
 
 They are parameterized mechanisms: they act on whatever target condition they are bound to, without knowledge of concrete game conditions.
 
-* **IdleRule**: reduces the target intensity proportionally on every evaluation.
 * **WeakenRule**: reduces the target intensity proportionally while a presence condition is present and alive.
 * **CancelRule**: brings the target intensity directly to zero.
 
