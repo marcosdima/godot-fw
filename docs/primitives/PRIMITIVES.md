@@ -44,6 +44,4 @@ Handler
 └── EffectHandler
 ```
 
-`RuleHandler` belongs to the rules system and lives with it in `core/rules/`.
-
 Handlers should remain focused on managing their respective data and should not become general-purpose managers.

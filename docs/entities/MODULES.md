@@ -21,6 +21,7 @@ Entity
     ├── status
     ├── progression
     ├── interaction
+    ├── rules
     └── _active
 ```
 
@@ -167,6 +168,12 @@ It is an ordinary lazy module and participates in no pipeline phase.
 `ProgressionModule` is the progression capability of an entity. See PROGRESSION.md.
 
 It is an ordinary lazy module and participates in no pipeline phase.
+
+# RulesModule
+
+`RulesModule` is the reactive rules capability of an entity. See RULES.md under `entities/modules/rules/`.
+
+It owns the rules of the entity, registers them on demand and subscribes them to the module facts they declare. It is an ordinary lazy module and participates in no pipeline phase.
 
 # Entity Resolvers
 

@@ -29,6 +29,9 @@ var _status: StatusModule
 ## Backing field of the lazy progression module.
 var _progression: ProgressionModule
 
+## Backing field of the lazy rules module.
+var _rules: RulesModule
+
 
 ## Creates the modules facade for the given entity. No module is instantiated here.
 func _init(p_entity: Entity) -> void:
@@ -69,6 +72,15 @@ var progression: ProgressionModule:
 			_progression = ProgressionModule.new(entity)
 			_activate(_progression)
 		return _progression
+
+
+## Returns the rules module, creating and activating it on first access.
+var rules: RulesModule:
+	get:
+		if _rules == null:
+			_rules = RulesModule.new(entity)
+			_activate(_rules)
+		return _rules
 
 
 ## Detaches every active module. Used when the entity leaves its current world context.
