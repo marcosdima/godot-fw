@@ -43,16 +43,18 @@ The exact internal structure of `core` and `game` may evolve as the architecture
 
 Architecture-specific decisions live in focused documents. This file holds the entry point, the transversal decisions and the general principles.
 
-* [PRIMITIVES.md](PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
-* [MODULES.md](MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
-* [INTERACTION.md](INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
-* [STATE_MODULE.md](STATE_MODULE.md): State domain: conditions, effects, effect applications, signals and the state update cycle.
-* [STATUS_MODULE.md](STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
-* [PROGRESSION.md](PROGRESSION.md): Progression domain: progression values as a per-entity capability.
-* [RESOLVERS.md](RESOLVERS.md): Entity resolvers: interpreting conditions and effects in the context of an entity.
-* [RULES.md](RULES.md): Rules domain: an independent system for condition interactions, generic rule implementations and priority.
-* [WORLD.md](WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
-* [ENTITIES.md](ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
+The documentation tree mirrors the `core/` folder structure; transversal documents live at the root.
+
+* [PRIMITIVES.md](primitives/PRIMITIVES.md): Base abstractions shared by all domains (`Element`, `Handler`).
+* [ENTITIES.md](entities/ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
+* [MODULES.md](entities/MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
+* [RESOLVERS.md](entities/RESOLVERS.md): Entity resolvers: interpreting conditions and effects in the context of an entity.
+* [INTERACTION.md](entities/modules/INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
+* [STATE_MODULE.md](entities/modules/state/STATE_MODULE.md): State domain: conditions, effects, effect applications, signals and the state update cycle.
+* [STATUS_MODULE.md](entities/modules/status/STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
+* [PROGRESSION.md](entities/modules/progression/PROGRESSION.md): Progression domain: progression values as a per-entity capability.
+* [RULES.md](rules/RULES.md): Rules domain: an independent system for condition interactions, generic rule implementations and priority.
+* [WORLD.md](world/WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
 * [BRANCHES.md](BRANCHES.md): Branch categories: contracts of experiments and prototypes towards `core`, naming conventions and active branches.
 
 
@@ -130,7 +132,7 @@ Game-specific identifiers must not be represented by unexplained numeric literal
 Do not write:
 
 ```
-Effect.new(1, -0.5)
+Effect.new(1, AttributeId.HEALTH, -0.5)
 ```
 
 when the number represents a game concept.
@@ -145,12 +147,17 @@ enum AttributeId {
     SPEED,
     STRENGTH,
 }
+
+enum EffectKind {
+    FIRE,
+    POISON,
+}
 ```
 
 Then:
 
 ```
-Effect.new(AttributeId.HEALTH, -0.5)
+Effect.new(EffectKind.FIRE, AttributeId.HEALTH, -0.5)
 ```
 
 The generic `core` systems may store identifiers without knowing their game-specific meaning.

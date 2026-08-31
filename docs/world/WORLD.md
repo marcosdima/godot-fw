@@ -97,8 +97,7 @@ WorldConfig
 │   ├── gravity
 │   └── physics_ticks_per_second
 │
-└── State
-    └── rules
+└── Rules
 ```
 
 World-specific configuration should not contain game-specific behavior unless explicitly required.

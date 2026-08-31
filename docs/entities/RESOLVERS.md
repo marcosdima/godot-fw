@@ -38,7 +38,7 @@ The base implementation returns the effect unchanged. Games replace the resolver
 The facade pre-creates base resolvers. Games replace them by assignment when they configure an entity:
 
 ```
-entity.resolvers.effect = FireEffectResolver.new(entity)
+entity.get_resolvers().effect = FireEffectResolver.new(entity)
 ```
 
 There is no dependency injection, registry or locator. Resolvers are constructed with their entity and access other modules through it at call time.

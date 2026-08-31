@@ -47,13 +47,13 @@ Effects are transient results and do not independently represent state to react 
 
 Rules primarily operate on condition intensity. For the initial implementation, rules may modify only `Condition.intensity`.
 
-Rules do not directly modify the `ConditionHandler`. The `StateModule` evaluates rules and performs the necessary structural changes through the `ConditionHandler`.
+Rules do not directly modify the `ConditionHandler`. They only mutate condition intensity; the state module update cycle performs the structural changes, removing conditions that are no longer alive together with their applications.
 
 Reducing a condition's intensity to zero or below is the mechanism for removing it. A rule that cancels a condition this way is a valid rule concept.
 
-Proportional reductions such as those performed by `IdleRule` or `WeakenRule` do not need to reach zero. A condition dies when its intensity falls to or below its death threshold, which is `0.1` by default. See STATE_MODULE.md for how condition liveness is defined.
+Proportional reductions such as those performed by `WeakenRule` do not need to reach zero. A condition dies when its intensity falls to or below its death threshold, which is `0.1` by default. See STATE_MODULE.md for how condition liveness is defined.
 
-When a rule brings a condition to an intensity that is no longer alive, that condition and its effect applications leave the circuit before effect applications are processed in that same tick.
+When a rule leaves a condition with an intensity that is no longer alive, that condition and its effect applications are removed by the state module update cycle before its effect applications are processed.
 
 ## Condition Expiry Is Not a Rule
 
@@ -79,7 +79,7 @@ Registration order must not affect evaluation order.
 
 ## RuleHandler
 
-`RuleHandler` extends the generic `Handler` primitive (see PRIMITIVES.md) and stores the rules evaluated by a `StateModule`.
+`RuleHandler` extends the generic `Handler` primitive (see PRIMITIVES.md) and stores the rules of the rules system, ready to be evaluated by an evaluator.
 
 It provides evaluation order through `get_rules_by_priority()`: rules sorted by descending priority, breaking ties by ascending identifier.
 

@@ -22,13 +22,11 @@ Entity
         └── EffectHandler
 ```
 
-The entity's quantitative state lives in `StatusModule`, see STATUS_MODULE.md. Rules are an independent system that does not live inside the state module, see RULES.md.
+Rules are an independent system that does not live inside the state module, see RULES.md.
 
 `StateModule` should not depend on concrete game-specific types.
 
 The handlers used by the state module are built on the generic `Handler` primitive. See PRIMITIVES.md.
-
-The entity's quantitative state (attributes, modifiers and their values) lives in `StatusModule`. See STATUS_MODULE.md.
 
 # Conditions
 
@@ -104,7 +102,7 @@ target = Health
 value = -5
 ```
 
-The concrete meaning of an effect is determined by the system processing it.
+The concrete meaning of an effect is determined by the game through its resolvers.
 
 # Effect Applications
 

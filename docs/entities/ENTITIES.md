@@ -26,6 +26,10 @@ The entity does not directly manage concrete modules; it communicates through `M
 
 Modules are optional capabilities of an entity. See MODULES.md for the complete module model.
 
+# Resolvers Ownership
+
+The entity also owns its `EntityResolvers` facade, created at construction. Resolvers interpret conditions and effects in the context of the entity and are not modules. See RESOLVERS.md.
+
 # World Relationship
 
 The entity holds a reference to the `World` it currently belongs to. The entity is the source of truth for its current World.
