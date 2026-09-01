@@ -155,7 +155,7 @@ It resolves added conditions and generated effects through the entity's resolver
 
 `InteractionModule` is the interaction capability of an entity. See INTERACTION.md for the complete model.
 
-It maintains the available interactions and the currently focused one. It is an ordinary lazy module and does not connect to world context.
+It maintains the available interactions, the currently focused one and the offerings presented by external sources. It is an ordinary lazy module and does not connect to world context.
 
 # StatusModule
 

@@ -49,7 +49,7 @@ The documentation tree mirrors the `core/` folder structure; transversal documen
 * [ENTITIES.md](entities/ENTITIES.md): Entity domain: identity and the composition-oriented entity model.
 * [MODULES.md](entities/MODULES.md): Module model: ownership, lazy activation, lifecycle, world changes and module-to-module access.
 * [RESOLVERS.md](entities/RESOLVERS.md): Entity resolvers: interpreting conditions and effects in the context of an entity.
-* [INTERACTION.md](entities/modules/INTERACTION.md): Interaction domain: available interactions, focus semantics and execution.
+* [INTERACTION.md](entities/modules/INTERACTION.md): Interaction domain: available interactions, per-source presentation, focus semantics and execution.
 * [STATE_MODULE.md](entities/modules/state/STATE_MODULE.md): State domain: conditions, effects, effect applications, signals and the state update cycle.
 * [STATUS_MODULE.md](entities/modules/status/STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
 * [PROGRESSION.md](entities/modules/progression/PROGRESSION.md): Progression domain: progression values as a per-entity capability.
