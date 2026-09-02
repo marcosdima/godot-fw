@@ -22,6 +22,7 @@ Entity
     ├── progression
     ├── interaction
     ├── rules
+    ├── equipment
     └── _active
 ```
 
@@ -174,6 +175,12 @@ It is an ordinary lazy module and participates in no pipeline phase.
 `RulesModule` is the reactive rules capability of an entity. See RULES.md under `entities/modules/rules/`.
 
 It owns the rules of the entity, registers them on demand and subscribes them to the module facts they declare. It is an ordinary lazy module and participates in no pipeline phase.
+
+# EquipmentModule
+
+`EquipmentModule` is the equipment capability of an entity. See EQUIPMENT.md for its internal responsibilities.
+
+It holds items in slots and applies their modifiers to the entity status while equipped. It is an ordinary lazy module and participates in no pipeline phase.
 
 # Entity Resolvers
 

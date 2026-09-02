@@ -51,6 +51,8 @@ Modifiers do not modify `current_value` directly. The effective value is calcula
 
 A `Modifier` represents a temporary or contextual modification to an `Attribute`.
 
+A modifier targets the attribute identified by `attribute_id` and contributes its additive `value` to that attribute's effective value.
+
 For example:
 
 ```
@@ -66,4 +68,4 @@ When the modifier expires or is removed, the attribute returns to its previous e
 
 Modifiers should not permanently alter the underlying attribute value.
 
-The exact lifetime and interaction rules for modifiers are not yet finalized.
+Modifiers do not have their own lifetime. They are applied and removed by the system that owns them: for example, the equipment module applies a modifier when its item is equipped and removes it on unequip, see EQUIPMENT.md. Timed modifier expiry remains a future possibility, see ARCHITECTURE.md.

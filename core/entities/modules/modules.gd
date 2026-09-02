@@ -32,6 +32,9 @@ var _progression: ProgressionModule
 ## Backing field of the lazy rules module.
 var _rules: RulesModule
 
+## Backing field of the lazy equipment module.
+var _equipment: EquipmentModule
+
 
 ## Creates the modules facade for the given entity. No module is instantiated here.
 func _init(p_entity: Entity) -> void:
@@ -81,6 +84,15 @@ var rules: RulesModule:
 			_rules = RulesModule.new(entity)
 			_activate(_rules)
 		return _rules
+
+
+## Returns the equipment module, creating and activating it on first access.
+var equipment: EquipmentModule:
+	get:
+		if _equipment == null:
+			_equipment = EquipmentModule.new(entity)
+			_activate(_equipment)
+		return _equipment
 
 
 ## Detaches every active module. Used when the entity leaves its current world context.
