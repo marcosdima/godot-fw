@@ -23,6 +23,7 @@ Entity
     ├── interaction
     ├── rules
     ├── equipment
+    ├── inventory
     └── _active
 ```
 
@@ -181,6 +182,12 @@ It owns the rules of the entity, registers them on demand and subscribes them to
 `EquipmentModule` is the equipment capability of an entity. See EQUIPMENT.md for its internal responsibilities.
 
 It holds items in slots and applies their modifiers to the entity status while equipped. It is an ordinary lazy module and participates in no pipeline phase.
+
+# InventoryModule
+
+`InventoryModule` is the inventory capability of an entity. See INVENTORY.md for its internal responsibilities.
+
+It holds opaque items keyed by instance identity, in insertion order. It is an ordinary lazy module and participates in no pipeline phase.
 
 # Entity Resolvers
 

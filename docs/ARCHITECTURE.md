@@ -53,6 +53,7 @@ The documentation tree mirrors the `core/` folder structure; transversal documen
 * [STATE_MODULE.md](entities/modules/state/STATE_MODULE.md): State domain: conditions, effects, effect applications, signals and the state update cycle.
 * [STATUS_MODULE.md](entities/modules/status/STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
 * [EQUIPMENT.md](entities/modules/EQUIPMENT.md): Equipment domain: slotted items and status modifiers applied while equipped.
+* [INVENTORY.md](entities/modules/INVENTORY.md): Inventory domain: opaque per-entity item storage keyed by instance identity.
 * [PROGRESSION.md](entities/modules/progression/PROGRESSION.md): Progression domain: progression values as a per-entity capability.
 * [RULES.md](entities/modules/rules/RULES.md): Rules domain: reactive per-entity relations that react to module facts.
 * [WORLD.md](world/WORLD.md): World domain: environment, entity lifecycle management, dimension-agnostic areas, update cycle and `UpdatePipeline`.
