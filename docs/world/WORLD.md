@@ -66,22 +66,28 @@ This keeps `core` engine-independent and leaves the choice of clock (frame, phys
 
 # Area
 
-`Area` is a core abstraction representing a region that keeps track of which entities are inside it.
+`Area` is a core abstraction representing a region that keeps track of which occupants are inside it. It is dimension-agnostic: occupants are plain `Object`s, so entities, nodes and any other runtime object can be tracked without core knowing the dimension.
 
 Real spatial detection belongs to the game: core provides only the API for the game to notify entries and exits.
 
-Area is composed of an `EntityHandler` holding the entities currently inside. It has no identity, name or id of its own; identity belongs to `Entity`.
+## Occupants
+
+Occupants are keyed by object identity: the same instance appears once, and two distinct instances are distinct occupants. `Area` has no identity, name or id of its own; identity belongs to the occupant.
+
+`Area` does not mix with collision layers, physics, proximity, 2D/3D or nodes; those concerns belong to the game. A game wrapper (for example a node with an area detection shape) decides which object enters: a body may enter as its `Entity`, as its node, or as both, consistently per area.
 
 ## Admission
 
-* `enter(entity) -> bool`: validates through `can_enter(entity)`. Rejects entities already inside or denied by the admission filter. On success returns true and emits `entity_entered`.
-* `exit(entity)`: operates only on registered entities; otherwise the attempt is rejected with an error. On success emits `entity_exited`.
-* `can_enter(entity) -> bool`: evaluates an optional admission filter callable. Without a filter, any entity may enter. The filter applies only at admission time; entities already inside are never revalidated.
-* `has_entity(entity)` and `get_entities()` provide membership queries.
+* `enter(occupant) -> bool`: validates through `can_enter(occupant)`. Rejects occupants already inside or denied by the admission filter. On success returns true and emits `occupant_entered`.
+* `exit(occupant)`: operates only on occupants inside; otherwise the attempt is rejected with an error. On success emits `occupant_exited`.
+* `can_enter(occupant) -> bool`: evaluates an optional admission filter callable. Without a filter, any occupant may enter. The filter applies only at admission time; occupants already inside are never revalidated.
+* `has_occupant(occupant)` and `get_occupants()` provide membership queries. `get_occupants()` returns the original instances in insertion order.
 
-Signals `entity_entered(entity)` and `entity_exited(entity)` are emitted only when the state actually changes.
+Signals `occupant_entered(occupant)` and `occupant_exited(occupant)` are emitted only when the state actually changes.
 
-Area does not mix with collision layers, physics, proximity, 2D/3D or nodes; those concerns belong to the game.
+## Lifetime
+
+The game must call `exit` before destroying an occupant, mirroring the interaction source contract. Core does not sweep stale references; only the game knows when an occupant is destroyed.
 
 # WorldConfig
 

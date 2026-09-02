@@ -54,7 +54,7 @@ The documentation tree mirrors the `core/` folder structure; transversal documen
 * [STATUS_MODULE.md](entities/modules/status/STATUS_MODULE.md): Status domain: the status module, attributes, modifiers and status mutation.
 * [PROGRESSION.md](entities/modules/progression/PROGRESSION.md): Progression domain: progression values as a per-entity capability.
 * [RULES.md](entities/modules/rules/RULES.md): Rules domain: reactive per-entity relations that react to module facts.
-* [WORLD.md](world/WORLD.md): World domain: environment, entity lifecycle management, update cycle and `UpdatePipeline`.
+* [WORLD.md](world/WORLD.md): World domain: environment, entity lifecycle management, dimension-agnostic areas, update cycle and `UpdatePipeline`.
 * [BRANCHES.md](BRANCHES.md): Branch categories: contracts of experiments and prototypes towards `core`, naming conventions and active branches.
 
 

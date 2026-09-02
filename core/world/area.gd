@@ -2,64 +2,60 @@ extends RefCounted
 class_name Area
 
 
-## Emitted when an entity successfully enters this area.
-signal entity_entered(entity: Entity)
+## Emitted when an occupant successfully enters this area.
+signal occupant_entered(occupant: Object)
 
-## Emitted when an entity successfully exits this area.
-signal entity_exited(entity: Entity)
+## Emitted when an occupant successfully exits this area.
+signal occupant_exited(occupant: Object)
 
 ## Optional callable filter evaluated at admission time.
-## Receives the candidate entity and returns whether it may enter.
-## Entities already inside are never revalidated against it.
+## Receives the candidate occupant and returns whether it may enter.
+## Occupants already inside are never revalidated against it.
 var admission_filter: Callable = Callable()
 
-## Entities currently inside this area.
-var _entities: EntityHandler
+## Occupants currently inside this area, in insertion order.
+var _occupants: Array[Object] = []
 
 
-## Creates a new area with its own entity collection.
-func _init() -> void:
-	_entities = EntityHandler.new()
-
-
-## Returns true if the given entity may enter this area.
-## Entities already inside cannot enter again. When an admission filter is set,
-## it decides the outcome; otherwise any entity may enter.
-func can_enter(entity: Entity) -> bool:
-	if _entities.contains(entity.id):
+## Returns true if the given occupant may enter this area.
+## Occupants already inside cannot enter again. When an admission filter is set,
+## it decides the outcome; otherwise any occupant may enter.
+func can_enter(occupant: Object) -> bool:
+	if _occupants.has(occupant):
 		return false
 	if admission_filter.is_valid():
-		return admission_filter.call(entity)
+		return admission_filter.call(occupant)
 	return true
 
 
-## Adds an entity to this area and emits entity_entered.
-## Returns false and rejects the entity when it is already inside
+## Adds an occupant to this area and emits occupant_entered.
+## Returns false and rejects the occupant when it is already inside
 ## or when the admission filter denies it.
-func enter(entity: Entity) -> bool:
-	if not can_enter(entity):
-		push_error("Entity %d cannot enter this area" % entity.id)
+func enter(occupant: Object) -> bool:
+	if not can_enter(occupant):
+		push_error("Occupant %d cannot enter this area" % occupant.get_instance_id())
 		return false
-	_entities.add_entity(entity)
-	entity_entered.emit(entity)
+	_occupants.append(occupant)
+	occupant_entered.emit(occupant)
 	return true
 
 
-## Removes an entity from this area and emits entity_exited.
-## Ignored with an error when the entity is not inside this area.
-func exit(entity: Entity) -> void:
-	if not _entities.contains(entity.id):
-		push_error("Entity %d is not inside this area" % entity.id)
+## Removes an occupant from this area and emits occupant_exited.
+## Ignored with an error when the occupant is not inside this area.
+func exit(occupant: Object) -> void:
+	if not _occupants.has(occupant):
+		push_error("Occupant %d is not inside this area" % occupant.get_instance_id())
 		return
-	_entities.remove_entity(entity)
-	entity_exited.emit(entity)
+	_occupants.erase(occupant)
+	occupant_exited.emit(occupant)
 
 
-## Returns true if the given entity is currently inside this area.
-func has_entity(entity: Entity) -> bool:
-	return _entities.contains(entity.id)
+## Returns true if the given occupant is currently inside this area.
+func has_occupant(occupant: Object) -> bool:
+	return _occupants.has(occupant)
 
 
-## Returns the entities currently inside this area.
-func get_entities() -> Array[Entity]:
-	return _entities.get_entities()
+## Returns the occupants currently inside this area, in insertion order.
+## The occupant instances are the same references.
+func get_occupants() -> Array[Object]:
+	return _occupants.duplicate()
