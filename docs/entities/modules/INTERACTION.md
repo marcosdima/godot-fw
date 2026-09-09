@@ -93,7 +93,7 @@ Core does not sweep stale offerings. Only the game knows when a source is destro
 
 * Only one interaction can be focused at a time.
 * Focus is stored as an instance reference, not as an index.
-* `add` focuses the first available interaction only when the set was empty; adding to a non-empty set never changes the focus.
+* `add` focuses the newly added interaction when no interaction is currently focused and the availability actually changes; it does not change focus when another interaction is already focused.
 * Removing the focused interaction through `remove()` unfocuses it (`on_unfocused` fires) and leaves nothing focused. Removing a non-focused interaction preserves the current focus.
 * When `present` or `retract` removes the focused interaction, the focus moves to the first available interaction, or to null when the set becomes empty.
 * `next()` and `previous()` cycle through the available set with wrap-around. With zero interactions they do nothing. From no focus they select the first available.

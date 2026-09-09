@@ -17,7 +17,7 @@ Entity
         └── Status
             └── Attribute
                 ├── base_value
-                ├── current_value
+                ├── current_value (clamped to min_value)
                 └── modifiers
 ```
 
@@ -29,7 +29,7 @@ Entity
 * `get_attribute` / `has_attribute` / `get_attributes` provide lookup.
 * `modify_attribute(attribute_id, delta)` adds a delta to an attribute's current value and returns whether the attribute exists.
 
-Status does not know about effects, conditions or resolvers. Applying an effect to the status is decided outside of it, see RESOLVERS.md; Status only performs the mutation, clamping to the attribute's minimum value.
+Status does not know about effects, conditions or resolvers. Applying an effect to the status is decided outside of it, see RESOLVERS.md. `Status.modify_attribute` delegates the mutation to `Attribute.current_value`, where bounds are enforced.
 
 The actual attributes used by a game are game-specific.
 
