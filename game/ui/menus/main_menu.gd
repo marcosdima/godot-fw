@@ -56,6 +56,7 @@ static func menu_button(id: int, label: String, action: Callable) -> UIButton:
 	button.text = label
 	button.action = action
 	button.style.color = Color(0.24, 0.28, 0.42)
+	button.style.font_color = Color(0.92, 0.95, 1.0)
 	button.style.border_color = Color(0.55, 0.65, 0.95)
 	button.style.border_width = 2.0
 	button.style.border_radius = 6.0

@@ -89,6 +89,32 @@ func test_back_button_invokes_the_callback() -> void:
 	assert_true(_back_pressed[0])
 
 
+func test_buttons_keep_a_font_color_distinct_from_the_surface() -> void:
+	var adapter := UIControlAdapter.new()
+	adapter.build(_menu.root)
+	for button in _buttons_in(_menu.root):
+		assert_false(
+			button.style.font_color.is_equal_approx(Color.TRANSPARENT),
+			"%s would fall back to the surface color" % button.name,
+		)
+		assert_false(
+			button.style.font_color.is_equal_approx(button.style.color),
+			"%s text matches its surface" % button.name,
+		)
+		var control := adapter.get_control(button) as Button
+		assert_eq(control.get_theme_color("font_color"), button.style.font_color)
+		assert_eq((control.get_theme_stylebox("normal") as StyleBoxFlat).bg_color, button.style.color)
+
+
+func _buttons_in(element: UIElement) -> Array[UIButton]:
+	var buttons: Array[UIButton] = []
+	if element is UIButton:
+		buttons.append(element)
+	for child in element.get_children():
+		buttons.append_array(_buttons_in(child))
+	return buttons
+
+
 func _find(name: String) -> UIElement:
 	var found := _find_in(_menu.root, name)
 	assert_not_null(found, "element %s not found" % name)

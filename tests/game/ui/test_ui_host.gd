@@ -60,6 +60,24 @@ func test_host_starts_on_the_main_menu() -> void:
 	assert_eq(_host.get_child(0).get_child_count(), 5)
 
 
+func test_main_menu_buttons_keep_a_font_color_distinct_from_the_surface() -> void:
+	await wait_frames(1)
+	var screen := _host.get_current_screen()
+	var adapter := _host.get_adapter()
+	for child in screen.root.get_children():
+		if child is UIButton:
+			assert_false(
+				child.style.font_color.is_equal_approx(Color.TRANSPARENT),
+				"%s would fall back to the surface color" % child.name,
+			)
+			assert_false(
+				child.style.font_color.is_equal_approx(child.style.color),
+				"%s text matches its surface" % child.name,
+			)
+			var control := adapter.get_control(child) as Button
+			assert_eq(control.get_theme_color("font_color"), child.style.font_color)
+
+
 func test_input_navigates_the_selection_group() -> void:
 	await wait_frames(1)
 	var screen := _host.get_current_screen()
