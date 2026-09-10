@@ -57,6 +57,7 @@ project/
 │       └── world.gd
 ├── game/
 │   └── ui/
+│       ├── hud/
 │       ├── menus/
 │       ├── main_menu.tscn
 │       ├── screen.gd

@@ -78,6 +78,8 @@ UI animation is data plus pure playback; `core/` never reads a clock.
 
 `UIHost` is the game-side Control that owns a `ScreenStack`, a materializing adapter and the current `UIScreen`. It maps game input (`ui_up`/`ui_down`/`ui_accept`/`ui_cancel`) onto the screen's selection group and submits as `focused.press()`, ticks playbacks in `_process`, and rebuilds the view when the stack changes. For text fields the host keeps the editing lifecycle: group focus on a field starts native editing (`activate_input`), leaving it commits, `ui_accept` while editing is the field's own Enter-commit and advances the group, and `ui_cancel` while editing cancels the draft (`cancel_input`) so the next `ui_cancel` pops the screen.
 
+The host also supports one persistent overlay: a game-owned HUD element tree materialized above every screen. `set_hud` (re)builds the overlay from any tree the game hands over; the host only materializes and keeps it current, never owns it. The host re-arranges the overlay on resize, ticks its playbacks in `_process`, and preserves it across screen swaps — the screen housekeeping only removes `Control` children, so a game controller sharing the host's tree (e.g. a `HudDemo` node driving the HUD with core `Entity` state) survives transitions. Overlay controls are authored with `MOUSE_FILTER_IGNORE` so pointer input falls through to the active screen.
+
 # Reference Screens
 
 `game/ui/menus/` contains the reference screens built purely from the model kinds above:
@@ -87,6 +89,17 @@ UI animation is data plus pure playback; `core/` never reads a clock.
 * `create_profile.gd` — the text-input slice: a `label + UIInput` row (authored sizes) feeding a Create action, an empty-name error line, and a Back button. Selecting the field starts editing, Enter commits and advances to Create, Escape cancels the draft before popping.
 
 Deliberately missing today: drag and left/right adjustment for range values. A real slider is out of scope; when it is required, the intended extension point is a stateless adjust verb on the model plus `ui_left`/`ui_right` routing in the host — not a state-carrying value widget.
+
+# HUD Slice
+
+`game/ui/hud/` is the reference for a persistent HUD built on the existing model → adapter path:
+
+* `hud.gd` (`UIHud`) builds the HUD's element tree: a full-view `FREE` root above every screen (`z_index = 100`) that never traps input, a top-left vitality bar (a tray with a fill the game resizes as a fraction of the bar), a numeric vitality readout, a souls counter and an alert line. Text and fill targets are authored positions and sizes; the bar fill width is the only value the game mutates.
+* `hud_demo.gd` (`HudDemo`) is a scene `Node` that drives the tree from a real core `Entity` (`StatusModule` + `Attribute`, here named "Vitality", clamped `0..20`). It is attached to the `UIHost` in `main_menu.tscn`; its `_ready` wires `set_hud` and `sync()` copies entity state into the element tree through effective-only setters. The model stays the source of truth: the demo never writes into the adapter's `Control` tree except for the flash restore described below.
+* Damage flash: a one-shot `modulate` playback over the fill (`0.15s`, `EASE_OUT`). The setter is effective-only, so the model `modulate` never leaves `1.0`; the `finished`/`stopped` handlers defer a view-side poke that restores `control.modulate` after the frame's playback tick applied the final dimmed frame.
+* The demo auto-steps with `beat_seconds` (default `1.0`) when the scene runs live; tests disable processing and drive `step()` manually.
+
+The overlay is game-owned presentation: `core/` knows nothing about it, and the HUD adds no observers, no data binding, and no layout invalidation — the demo pushes state through the same setters and `changed` signals the screens use.
 
 # Clock
 
