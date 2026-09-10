@@ -20,15 +20,6 @@ var _root_control: Control = null
 ## Set when the current screen was rebuilt and still needs its final arrange.
 var _pending_arrange := false
 
-## The settings screen pushed by the main menu.
-var _settings_ui: UIScreen = null
-
-## The settings state edited by the settings screen.
-var _agent_settings: AgentSettings = null
-
-## The create profile screen pushed by the main menu, built on demand.
-var _create_profile_ui: UIScreen = null
-
 ## The input currently being edited natively, or null.
 var _editing: UIElement = null
 
@@ -42,13 +33,12 @@ var _hud_adapter: UIControlAdapter = null
 var _hud_control: Control = null
 
 
-## Initializes the host from a scene: builds the standard screens on top of a
-## fresh stack. Programmatic hosts call setup() instead.
+## Prepares the host control and attaches any HUD materialized before the host
+## entered the tree. The game composes the screens on top of this host (see
+## AppUI); programmatic hosts call setup() instead of relying on this.
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	if _stack == null:
-		_initialize_default_screens()
 	_attach_hud_control()
 
 
@@ -176,8 +166,11 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		if hovered is UIButton:
 			(hovered as UIButton).press()
-		elif hovered is UIInput and _current.group.get_focused() != hovered:
+		elif hovered is UIInput and (_current.group.get_focused() != hovered or _editing != hovered):
 			_current.group.focus(hovered)
+			if _editing != hovered:
+				_adapter.activate_input(hovered)
+				_editing = hovered
 
 
 ## Maps navigation and submit input to the current screen's selection group.
@@ -265,41 +258,3 @@ func _on_input_submitted(element: UIElement, _text: String) -> void:
 	if _current.group.get_focused() != element:
 		return
 	_current.group.next()
-
-
-## Creates the standard main and settings screens and shows the main menu.
-func _initialize_default_screens() -> void:
-	var stack := ScreenStack.new()
-	var main_ui := UIMainMenu.build(
-		func() -> void: _open_settings(),
-		func() -> void: get_tree().quit(),
-		func() -> void: _open_create_profile()
-	)
-	_agent_settings = AgentSettings.new()
-	_settings_ui = UISettingsMenu.build(_agent_settings, func() -> void: stack.pop())
-	setup(stack)
-	register(main_ui)
-	register(_settings_ui)
-	stack.push(main_ui.root)
-
-
-## Pushes the create profile screen, building it the first time it is requested.
-func _open_create_profile() -> void:
-	if _create_profile_ui == null:
-		_create_profile_ui = UICreateProfile.build(
-			func(_profile_name: String) -> void: _stack.pop(),
-			func() -> void: _stack.pop()
-		)
-		register(_create_profile_ui)
-	if _stack.current != _create_profile_ui.root:
-		_stack.push(_create_profile_ui.root)
-
-
-## Pushes the settings screen, building it the first time it is requested.
-func _open_settings() -> void:
-	if _settings_ui == null:
-		_agent_settings = AgentSettings.new()
-		_settings_ui = UISettingsMenu.build(_agent_settings, func() -> void: _stack.pop())
-		register(_settings_ui)
-	if _stack.current != _settings_ui.root:
-		_stack.push(_settings_ui.root)

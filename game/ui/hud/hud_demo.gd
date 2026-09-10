@@ -8,7 +8,7 @@ const VITALITY_ID := 1
 ## Health ceiling of the demo target; the bar fills from this value.
 const VITALITY_MAX := 20.0
 
-## Duration of the damage flash on the bar in seconds.
+## Duration of the full out-and-back damage flash swing on the bar in seconds.
 const FLASH_DURATION := 0.15
 
 ## Opacity target of the damage flash playback.
@@ -139,8 +139,8 @@ func sync() -> void:
 
 
 ## Runs a one-shot opacity dip on the vitality fill through the animation
-## system. The model modulate stays at 1.0 during playback; the finished and
-## stopped handlers clear the color back to opaque after the frame's tick.
+## system. The swing makes the track travel base -> target -> base within the
+## duration, so the fill is opaque again on its own when the playback ends.
 func _flash_damage() -> void:
 	if _flashing or _host == null:
 		return
@@ -150,6 +150,7 @@ func _flash_damage() -> void:
 	var fade := UIAnimationDefinition.new()
 	fade.duration = FLASH_DURATION
 	fade.easing = UIAnimationDefinition.Easing.EASE_OUT
+	fade.swing = true
 	fade.add_track(&"modulate", FLASH_ALPHA)
 	var playback := UIAnimationPlayback.new(_bar_fill, fade)
 	playback.finished.connect(_on_flash_finished)
@@ -158,25 +159,10 @@ func _flash_damage() -> void:
 	_flashing = true
 
 
-## Marks the flash over and schedules the opaque restore after the current
-## frame's playback tick applied the final dimmed frame.
+## Opens the gate for the next damage beat. The animation itself already
+## restored the fill to its base opacity; nothing is poked on the view.
 func _on_flash_finished() -> void:
 	_flashing = false
-	restore_after_flash.call_deferred()
-
-
-## Forces the surfaced fill back to opaque. The model modulate never left 1.0,
-## so the restore is a view-side poke: the playback's last frame applied the
-## dimmed color and nothing else will resync it.
-func restore_after_flash() -> void:
-	if _host == null:
-		return
-	var adapter := _host.get_hud_adapter()
-	if adapter == null:
-		return
-	var control := adapter.get_control(_bar_fill)
-	if control != null:
-		control.modulate = Color.WHITE
 
 
 ## Returns the HUD element tree this demo drives.

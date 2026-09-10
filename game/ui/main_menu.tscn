@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/ui/ui_host.gd" id="1_host"]
 [ext_resource type="Script" path="res://game/ui/hud/hud_demo.gd" id="2_hud"]
+[ext_resource type="Script" path="res://game/ui/app_ui.gd" id="3_app"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -14,3 +15,6 @@ script = ExtResource("1_host")
 
 [node name="HudDemo" type="Node" parent="."]
 script = ExtResource("2_hud")
+
+[node name="AppUI" type="Node" parent="."]
+script = ExtResource("3_app")

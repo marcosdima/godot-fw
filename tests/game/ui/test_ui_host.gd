@@ -2,14 +2,19 @@ extends GutTest
 
 
 var _host: UIHost = null
+var _app: AppUI = null
 
 
 func before_each() -> void:
 	_host = UIHost.new()
 	add_child_autofree(_host)
+	_app = AppUI.compose(_host)
 
 
 func after_each() -> void:
+	if _app != null:
+		_app.free()
+		_app = null
 	_host = null
 
 
@@ -203,6 +208,50 @@ func test_repeated_open_close_keeps_one_root_control_and_single_highlight() -> v
 	assert_eq(main_control.get_child_count(), 5)
 
 
+func test_non_control_node_children_survive_screen_swaps() -> void:
+	await wait_frames(1)
+	var sibling := Node.new()
+	sibling.name = "sibling"
+	_host.add_child(sibling)
+	assert_same(sibling.get_parent(), _host)
+	_press(KEY_DOWN)
+	_press(KEY_ENTER)
+	await wait_frames(1)
+	assert_eq(_host.get_current_screen().root.name, "settings_root")
+	assert_same(sibling.get_parent(), _host)
+	assert_true(is_instance_valid(sibling))
+	_press(KEY_ESCAPE)
+	await wait_frames(1)
+	assert_eq(_host.get_current_screen().root.name, "main_root")
+	assert_same(sibling.get_parent(), _host)
+	assert_true(is_instance_valid(sibling))
+
+
+func test_scene_auto_composes_the_host_like_compose() -> void:
+	var scene: Node = (load("res://game/ui/main_menu.tscn") as PackedScene).instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var host := scene as UIHost
+	assert_not_null(host.get_current_screen())
+	assert_eq(host.get_current_screen().root.name, "main_root")
+	assert_not_null(host.get_hud_adapter())
+	_press_on(host, KEY_DOWN)
+	_press_on(host, KEY_ENTER)
+	await get_tree().process_frame
+	assert_eq(host.get_current_screen().root.name, "settings_root")
+	_press_on(host, KEY_ESCAPE)
+	await get_tree().process_frame
+	assert_eq(host.get_current_screen().root.name, "main_root")
+
+
+func _press_on(target: UIHost, keycode: Key) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.pressed = true
+	target._unhandled_input(event)
+
+
 func _open_create_profile() -> void:
 	await wait_frames(1)
 	_press(KEY_DOWN)
@@ -249,6 +298,20 @@ func test_clicking_the_field_focuses_and_starts_editing() -> void:
 	_mouse_click(_create_field().get_global_rect().get_center())
 	assert_same(_host._editing, _create_input())
 	assert_true(_create_field().editable)
+	assert_eq(_host.get_current_screen().group.get_focused().name, "name_input")
+
+
+func test_clicking_a_focused_but_inert_field_starts_editing() -> void:
+	await _open_create_profile()
+	var field := _create_field()
+	_press(KEY_ESCAPE)
+	assert_null(_host._editing)
+	assert_eq(_host.get_current_screen().group.get_focused().name, "name_input")
+	assert_false(field.editable)
+	await _prepare_geometry()
+	_mouse_click(field.get_global_rect().get_center())
+	assert_same(_host._editing, _create_input())
+	assert_true(field.editable)
 	assert_eq(_host.get_current_screen().group.get_focused().name, "name_input")
 
 

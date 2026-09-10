@@ -2,6 +2,7 @@ extends GutTest
 
 
 var _host: UIHost = null
+var _app: AppUI = null
 var _demo: HudDemo = null
 
 
@@ -10,8 +11,17 @@ func before_each() -> void:
 	_demo = HudDemo.new()
 	_host.add_child(_demo)
 	add_child_autofree(_host)
+	_app = AppUI.compose(_host)
 	_demo.set_process(false)
 	await get_tree().process_frame
+
+
+func after_each() -> void:
+	if _app != null:
+		_app.free()
+		_app = null
+	_demo = null
+	_host = null
 
 
 func _press(keycode: Key) -> void:
