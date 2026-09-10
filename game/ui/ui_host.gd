@@ -106,6 +106,8 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		if hovered is UIButton:
 			(hovered as UIButton).press()
+		elif hovered is UIInput and _current.group.get_focused() != hovered:
+			_current.group.focus(hovered)
 
 
 ## Maps navigation and submit input to the current screen's selection group.

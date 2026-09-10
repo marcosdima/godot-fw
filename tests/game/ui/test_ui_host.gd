@@ -240,6 +240,18 @@ func test_enter_on_the_field_commits_and_advances_to_create() -> void:
 	assert_eq(screen.group.get_focused().name, "create")
 
 
+func test_clicking_the_field_focuses_and_starts_editing() -> void:
+	await _open_create_profile()
+	await _prepare_geometry()
+	_press(KEY_DOWN)
+	assert_eq(_host.get_current_screen().group.get_focused().name, "create")
+	assert_null(_host._editing)
+	_mouse_click(_create_field().get_global_rect().get_center())
+	assert_same(_host._editing, _create_input())
+	assert_true(_create_field().editable)
+	assert_eq(_host.get_current_screen().group.get_focused().name, "name_input")
+
+
 func test_moving_focus_off_the_field_commits_the_draft() -> void:
 	await _open_create_profile()
 	var field := _create_field()
