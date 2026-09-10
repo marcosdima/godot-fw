@@ -76,6 +76,15 @@ UI animation is data plus pure playback; `core/` never reads a clock.
 
 `UIHost` is the game-side Control that owns a `ScreenStack`, a materializing adapter and the current `UIScreen`. It maps game input (`ui_up`/`ui_down`/`ui_accept`/`ui_cancel`) onto the screen's selection group and submits as `focused.press()`, ticks playbacks in `_process`, and rebuilds the view when the stack changes.
 
+# Reference Screens
+
+`game/ui/menus/` contains two screens built purely from the model kinds above:
+
+* `main_menu.gd` — a column of buttons (`COLUMN` layout) with a fade-in title playback.
+* `settings_menu.gd` — a second, stateful use case: `Fullscreen` and `Resolution` are cycle buttons, `Volume` is a stepper row (`[ − ][ value ][ + ]`) that is the reference `ROW` layout. The edited values live in `game/ui/agent_settings.gd`, an engine-light settings object owned by the game; the UI renders and mutates it but never owns the state.
+
+Deliberately missing today: drag and left/right adjustment for range values. A real slider is out of scope; when it is required, the intended extension point is a stateless adjust verb on the model plus `ui_left`/`ui_right` routing in the host — not a state-carrying value widget.
+
 # Clock
 
 Core UI never reads the engine clock and never owns a timer. Advancing playbacks with `advance(delta)` is the game's responsibility; the game decides what delta to feed. This mirrors the world update contract in `# Runtime and Clock` of ARCHITECTURE.md.

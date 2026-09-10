@@ -23,6 +23,9 @@ var _pending_arrange := false
 ## The settings screen pushed by the main menu.
 var _settings_ui: UIScreen = null
 
+## The settings state edited by the settings screen.
+var _agent_settings: AgentSettings = null
+
 
 ## Initializes the host from a scene: builds the standard screens on top of a
 ## fresh stack. Programmatic hosts call setup() instead.
@@ -160,7 +163,8 @@ func _initialize_default_screens() -> void:
 		func() -> void: _open_settings(),
 		func() -> void: get_tree().quit()
 	)
-	_settings_ui = UISettingsMenu.build(func() -> void: stack.pop())
+	_agent_settings = AgentSettings.new()
+	_settings_ui = UISettingsMenu.build(_agent_settings, func() -> void: stack.pop())
 	setup(stack)
 	register(main_ui)
 	register(_settings_ui)
@@ -170,7 +174,8 @@ func _initialize_default_screens() -> void:
 ## Pushes the settings screen, building it the first time it is requested.
 func _open_settings() -> void:
 	if _settings_ui == null:
-		_settings_ui = UISettingsMenu.build(func() -> void: _stack.pop())
+		_agent_settings = AgentSettings.new()
+		_settings_ui = UISettingsMenu.build(_agent_settings, func() -> void: _stack.pop())
 		register(_settings_ui)
 	if _stack.current != _settings_ui.root:
 		_stack.push(_settings_ui.root)
