@@ -2,6 +2,11 @@ extends RefCounted
 class_name UIControlAdapter
 
 
+## Emitted after a text field commits its buffer through native submit (Enter),
+## with the element and the committed text. The game decides the effect, which
+## is typically advancing the selection group.
+signal submitted(element: UIElement, text: String)
+
 ## Controls keyed by their element.
 var _controls: Dictionary = {}
 
@@ -20,6 +25,13 @@ var _highlighted: UIElement = null
 
 ## Playbacks driven by tick().
 var _playbacks: Array[UIAnimationPlayback] = []
+
+## The element currently being edited as a native text field, or null.
+var _active_input: UIElement = null
+
+## True while a field cancel is in progress. The focus_exited triggered by the
+## cancel must restore the committed draft instead of re-committing it.
+var _cancel_pending := false
 
 
 ## Builds a Control tree for the given element tree, releasing any previous one.
@@ -45,6 +57,8 @@ func release() -> void:
 	_controls.clear()
 	_playbacks.clear()
 	_highlighted = null
+	_active_input = null
+	_cancel_pending = false
 	if _root_control != null:
 		_root_control.queue_free()
 		_root_control = null
@@ -63,6 +77,93 @@ func highlight(element: UIElement) -> void:
 		var control: Control = _controls.get(element)
 		if control is Button:
 			(control as Button).add_theme_stylebox_override("normal", _make_stylebox(element.style, true))
+		elif control is LineEdit:
+			(control as LineEdit).add_theme_stylebox_override("normal", _make_stylebox(element.style, true))
+			(control as LineEdit).add_theme_stylebox_override("focus", _make_stylebox(element.style, true))
+
+
+## Starts native editing of the given field: the control becomes editable,
+## focusable and mouse-clickable, and grabs focus when it is inside the tree.
+func activate_input(element: UIElement) -> void:
+	var control: Control = _controls.get(element)
+	if control == null or not control is LineEdit:
+		return
+	_active_input = element
+	var input := control as LineEdit
+	input.editable = true
+	input.focus_mode = Control.FOCUS_ALL
+	input.mouse_filter = Control.MOUSE_FILTER_PASS
+	input.caret_blink = true
+	if input.is_inside_tree():
+		input.grab_focus()
+
+
+## Stops native editing of the given field, committing its draft to the model.
+## Call when the group focus leaves the field.
+func deactivate_input(element: UIElement) -> void:
+	var control: Control = _controls.get(element)
+	if control == null or not control is LineEdit:
+		return
+	_commit_input(element, control)
+	_deactivate_input(element, control)
+
+
+## Stops native editing of the given field and reverts its draft to the last
+## committed text. The cancel guard is armed before the native focus is
+## released so the focus_exited it triggers restores instead of committing.
+func cancel_input(element: UIElement) -> void:
+	var control: Control = _controls.get(element)
+	if control == null or not control is LineEdit:
+		return
+	_cancel_pending = true
+	(control as LineEdit).text = (element as UIInput).text
+	_deactivate_input(element, control)
+	if _cancel_pending:
+		_cancel_pending = false
+
+
+## Commits the field buffer into the model when it differs. Model writes are
+## effective-only, so repeated commits leave the value untouched.
+func _commit_input(element: UIElement, control: Control) -> void:
+	if element is UIInput:
+		(element as UIInput).text = (control as LineEdit).text
+
+
+## Restores the field to its display-only state and releases native focus.
+func _deactivate_input(element: UIElement, control: Control) -> void:
+	var input := control as LineEdit
+	input.editable = false
+	input.focus_mode = Control.FOCUS_NONE
+	input.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	input.caret_blink = false
+	if _active_input == element:
+		_active_input = null
+	if input.is_inside_tree():
+		input.release_focus()
+
+
+## Handles the native submit of a field: commits the buffer and reports the
+## submit so the game can move the selection group.
+func _on_input_submitted(element: UIElement, text: String) -> void:
+	var control: Control = _controls.get(element)
+	if control == null:
+		return
+	_commit_input(element, control)
+	submitted.emit(element, text)
+
+
+## Handles the native focus loss of a field. When a cancel armed the guard, the
+## draft was deliberately reverted, so this call restores instead of commits.
+func _on_input_focus_exited(element: UIElement) -> void:
+	if _cancel_pending:
+		_cancel_pending = false
+		return
+	if _active_input != element:
+		return
+	var control: Control = _controls.get(element)
+	if control == null:
+		return
+	_commit_input(element, control)
 
 
 ## Registers a playback so tick() drives it against its element's control.
@@ -139,6 +240,7 @@ func _materialize(element: UIElement) -> Control:
 	var control := _create_control(element)
 	_controls[element] = control
 	_connect(element)
+	_connect_input_control(element, control)
 	_apply_all(element, control)
 	for child in element.get_children():
 		var child_control := _materialize(child)
@@ -157,6 +259,12 @@ func _create_control(element: UIElement) -> Control:
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.focus_mode = Control.FOCUS_NONE
 		return button
+	if element is UIInput:
+		var input := LineEdit.new()
+		input.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		input.focus_mode = Control.FOCUS_NONE
+		input.editable = false
+		return input
 	var control := Control.new()
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if element is UIContainer and (element as UIContainer).full_view:
@@ -177,6 +285,19 @@ func _connect(element: UIElement) -> void:
 	_connections.append([element, &"child_removed", on_child_removed])
 
 
+## Connects the native editing signals of a text field so its commits and focus
+## loss reflect in the model.
+func _connect_input_control(element: UIElement, control: Control) -> void:
+	if not control is LineEdit:
+		return
+	var on_submitted := func(text: String) -> void: _on_input_submitted(element, text)
+	var on_focus_exited := func() -> void: _on_input_focus_exited(element)
+	control.text_submitted.connect(on_submitted)
+	control.focus_exited.connect(on_focus_exited)
+	_connections.append([control, &"text_submitted", on_submitted])
+	_connections.append([control, &"focus_exited", on_focus_exited])
+
+
 ## Applies every meaningful property of the element to its control.
 func _apply_all(element: UIElement, control: Control) -> void:
 	if not _is_full_view(element):
@@ -193,6 +314,9 @@ func _apply_all(element: UIElement, control: Control) -> void:
 		(control as Label).text = (element as UIText).text
 	if element is UIButton:
 		(control as Button).text = (element as UIButton).text
+	if element is UIInput and control is LineEdit:
+		(control as LineEdit).text = (element as UIInput).text
+		(control as LineEdit).placeholder_text = (element as UIInput).placeholder
 
 
 ## Applies a single property change to the matching control. Properties that
@@ -227,6 +351,11 @@ func _apply(element: UIElement, property: StringName) -> void:
 				(control as Label).text = (element as UIText).text
 			elif element is UIButton and control is Button:
 				(control as Button).text = (element as UIButton).text
+			elif element is UIInput and control is LineEdit and _active_input != element:
+				(control as LineEdit).text = (element as UIInput).text
+		&"placeholder":
+			if element is UIInput and control is LineEdit:
+				(control as LineEdit).placeholder_text = (element as UIInput).placeholder
 		&"orientation", &"separation", &"margin", &"full_view":
 			if element is UIContainer:
 				arrange(element as UIContainer)
@@ -241,7 +370,7 @@ func _apply_style(element: UIElement) -> void:
 		return
 	if control is Label:
 		var label := control as Label
-		label.add_theme_color_override("font_color", element.style.color)
+		label.add_theme_color_override("font_color", _font_color(element))
 		label.add_theme_constant_override("outline_size", 0)
 		label.horizontal_alignment = _align_h(element.style.align_h)
 		label.vertical_alignment = _align_v(element.style.align_v)
@@ -254,14 +383,36 @@ func _apply_style(element: UIElement) -> void:
 		button.add_theme_stylebox_override("hover", stylebox)
 		button.add_theme_stylebox_override("focus", stylebox)
 		button.add_theme_stylebox_override("pressed", stylebox)
-		button.add_theme_color_override("font_color", element.style.color)
-		button.add_theme_color_override("font_hover_color", element.style.color)
-		button.add_theme_color_override("font_pressed_color", element.style.color)
-		button.add_theme_color_override("font_focus_color", element.style.color)
+		var font_color := _font_color(element)
+		button.add_theme_color_override("font_color", font_color)
+		button.add_theme_color_override("font_hover_color", font_color)
+		button.add_theme_color_override("font_pressed_color", font_color)
+		button.add_theme_color_override("font_focus_color", font_color)
 		if element.style.font_size > 0:
 			button.add_theme_font_size_override("font_size", element.style.font_size)
+	elif control is LineEdit:
+		var input := control as LineEdit
+		var input_stylebox := _make_stylebox(element.style, false)
+		input.add_theme_stylebox_override("normal", input_stylebox)
+		input.add_theme_stylebox_override("hover", input_stylebox)
+		input.add_theme_stylebox_override("focus", input_stylebox)
+		input.add_theme_stylebox_override("pressed", input_stylebox)
+		input.add_theme_color_override("font_color", _font_color(element))
+		var placeholder_color := _font_color(element)
+		placeholder_color.a *= 0.5
+		input.add_theme_color_override("font_placeholder_color", placeholder_color)
+		if element.style.font_size > 0:
+			input.add_theme_font_size_override("font_size", element.style.font_size)
 	else:
 		control.add_theme_stylebox_override("panel", _make_stylebox(element.style, false))
+
+
+## Returns the foreground of the element: its authored font color when set,
+## falling back to the surface color.
+func _font_color(element: UIElement) -> Color:
+	if not element.style.font_color.is_equal_approx(Color.TRANSPARENT):
+		return element.style.font_color
+	return element.style.color
 
 
 ## Returns a StyleBoxFlat built from the style data, optionally highlighted.
@@ -453,6 +604,9 @@ func _release_subtree(element: UIElement) -> void:
 		control.queue_free()
 	if _highlighted == element:
 		_highlighted = null
+	if _active_input == element:
+		_active_input = null
+		_cancel_pending = false
 	for child in element.get_children():
 		_release_subtree(child)
 

@@ -20,6 +20,10 @@ enum AlignV {
 ## Foreground color of the element.
 var color := Color.WHITE
 
+## Foreground used for rendered text. Transparent means fall back to `color`,
+## preserving the historical single-tint behavior.
+var font_color := Color.TRANSPARENT
+
 ## Border color of the element. Transparent by default so no border renders.
 var border_color := Color.TRANSPARENT
 

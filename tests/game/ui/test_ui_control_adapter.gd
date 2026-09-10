@@ -224,3 +224,163 @@ func test_nested_row_inside_column_is_sized_positioned_and_laid_out() -> void:
 	assert_eq(value.size, Vector2.ZERO)
 	assert_eq(inc.position, Vector2.ZERO)
 	assert_eq(inc.size, Vector2.ZERO)
+
+
+func test_input_materializes_as_a_display_only_line_edit() -> void:
+	var input := UIInput.new(1, "field")
+	input.text = "Marcos"
+	input.placeholder = "Name"
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	assert_not_null(edit)
+	assert_eq(edit.text, "Marcos")
+	assert_eq(edit.placeholder_text, "Name")
+	assert_false(edit.editable)
+	assert_eq(edit.focus_mode, Control.FOCUS_NONE)
+	assert_eq(edit.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+
+
+func test_input_layout_uses_the_authored_size_in_a_row() -> void:
+	var root := UIContainer.new(0, "root")
+	root.full_view = true
+	root.orientation = UIContainer.Orientation.ROW
+	root.separation = 4.0
+	var label := UIText.new(1, "label")
+	label.text = "Name"
+	label.size = Vector2(120.0, 36.0)
+	var input := UIInput.new(2, "field")
+	input.size = Vector2(320.0, 36.0)
+	root.add(label)
+	root.add(input)
+	var adapter := UIControlAdapter.new()
+	var control := adapter.build(root)
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	control.size = Vector2(600.0, 200.0)
+	adapter.arrange(root)
+	var label_control := adapter.get_control(label) as Control
+	var input_control := adapter.get_control(input) as Control
+	assert_eq(input_control.size, Vector2(320.0, 36.0))
+	assert_gt(input_control.position.x, label_control.position.x + label_control.size.x)
+	assert_almost_eq(input_control.position.y, (200.0 - 36.0) * 0.5, 1.0)
+	assert_eq(input.size, Vector2(320.0, 36.0))
+	assert_eq(input.position, Vector2.ZERO)
+
+
+func test_input_property_changes_reach_the_control_when_inactive() -> void:
+	var input := UIInput.new(1, "field")
+	input.text = "First"
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	input.placeholder = "Hint"
+	assert_eq(edit.placeholder_text, "Hint")
+	input.text = "Second"
+	assert_eq(edit.text, "Second")
+
+
+func test_activate_input_makes_the_field_editable_and_focusable() -> void:
+	var input := UIInput.new(1, "field")
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	_adapter.activate_input(input)
+	assert_true(edit.editable)
+	assert_eq(edit.focus_mode, Control.FOCUS_ALL)
+	assert_eq(edit.mouse_filter, Control.MOUSE_FILTER_PASS)
+
+
+func test_text_submitted_commits_and_reports_the_submit() -> void:
+	var input := UIInput.new(1, "field")
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	var reports: Array = []
+	_adapter.submitted.connect(func(element: UIElement, text: String) -> void: reports.append([element, text]))
+	edit.text = "March"
+	edit.emit_signal("text_submitted", "March")
+	assert_eq(input.text, "March")
+	assert_eq(reports.size(), 1)
+	assert_same(reports[0][0], input)
+	assert_eq(reports[0][1], "March")
+
+
+func test_focus_exited_commits_the_draft_while_editing() -> void:
+	var input := UIInput.new(1, "field")
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	_adapter.activate_input(input)
+	edit.text = "typed but not submitted"
+	edit.emit_signal("focus_exited")
+	assert_eq(input.text, "typed but not submitted")
+
+
+func test_deactivate_input_commits_and_restores_the_display_state() -> void:
+	var input := UIInput.new(1, "field")
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	_adapter.activate_input(input)
+	edit.text = "draft"
+	_adapter.deactivate_input(input)
+	assert_eq(input.text, "draft")
+	assert_false(edit.editable)
+	assert_eq(edit.focus_mode, Control.FOCUS_NONE)
+	assert_eq(edit.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+
+
+func test_cancel_input_restores_the_committed_value() -> void:
+	var input := UIInput.new(1, "field")
+	input.text = "Saved"
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	_adapter.activate_input(input)
+	edit.text = "Unsaved"
+	_adapter.cancel_input(input)
+	assert_eq(input.text, "Saved")
+	assert_eq(edit.text, "Saved")
+
+
+func test_stale_focus_exited_after_cancel_does_not_recommit() -> void:
+	var input := UIInput.new(1, "field")
+	input.text = "Saved"
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	_adapter.activate_input(input)
+	_adapter.cancel_input(input)
+	edit.text = "SNEAK"
+	edit.emit_signal("focus_exited")
+	assert_eq(input.text, "Saved")
+
+
+func test_input_font_color_takes_precedence_over_the_surface_color() -> void:
+	var input := UIInput.new(1, "field")
+	input.style.color = Color(0.1, 0.2, 0.3)
+	input.style.font_color = Color(0.9, 0.95, 1.0)
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	assert_eq(edit.get_theme_color("font_color"), Color(0.9, 0.95, 1.0))
+	assert_almost_eq(edit.get_theme_color("font_placeholder_color").a, 0.5, 0.01)
+
+
+func test_surfaces_without_font_color_fall_back_to_the_surface_color() -> void:
+	var label := UIText.new(1, "label")
+	label.text = "x"
+	label.style.color = Color(0.4, 0.5, 0.6)
+	var root := UIContainer.new(0, "root")
+	root.add(label)
+	var label_control := _adapter.build(root).get_child(0) as Label
+	assert_eq(label_control.get_theme_color("font_color"), Color(0.4, 0.5, 0.6))
+
+
+func test_highlight_applies_a_lighter_stylebox_to_the_input() -> void:
+	var input := UIInput.new(1, "field")
+	var root := UIContainer.new(0, "root")
+	root.add(input)
+	var edit := _adapter.build(root).get_child(0) as LineEdit
+	_adapter.highlight(input)
+	assert_eq((edit.get_theme_stylebox("normal") as StyleBoxFlat).bg_color, input.style.color.lightened(0.25))
