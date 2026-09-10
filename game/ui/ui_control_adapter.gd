@@ -353,14 +353,24 @@ func _apply(element: UIElement, property: StringName) -> void:
 				(control as Button).text = (element as UIButton).text
 			elif element is UIInput and control is LineEdit and _active_input != element:
 				(control as LineEdit).text = (element as UIInput).text
+			_relayout()
 		&"placeholder":
 			if element is UIInput and control is LineEdit:
 				(control as LineEdit).placeholder_text = (element as UIInput).placeholder
+			_relayout()
 		&"orientation", &"separation", &"margin", &"full_view":
 			if element is UIContainer:
 				arrange(element as UIContainer)
 		_:
 			_apply_all(element, control)
+
+
+## Re-arranges the whole materialized tree so slots sized from a control's
+## minimum (text width) stay current after a content change.
+func _relayout() -> void:
+	var root := _root_element
+	if root is UIContainer:
+		arrange(root)
 
 
 ## Applies the element style to its control as Godot theme overrides.

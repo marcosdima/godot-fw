@@ -106,6 +106,30 @@ func test_buttons_keep_a_font_color_distinct_from_the_surface() -> void:
 		assert_eq((control.get_theme_stylebox("normal") as StyleBoxFlat).bg_color, button.style.color)
 
 
+func test_volume_text_change_relayouts_the_stepper_row() -> void:
+	var adapter := UIControlAdapter.new()
+	var control := adapter.build(_menu.root)
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	control.size = Vector2(800.0, 600.0)
+	adapter.arrange(_menu.root)
+	var row_control := adapter.get_control(_find("volume_row")) as Control
+	var inc_control := adapter.get_control(_find("volume_inc")) as Button
+	var inc := _find("volume_inc") as UIButton
+	var dec := _find("volume_dec") as UIButton
+	_menu.group.focus(inc)
+	var row_90 := row_control.size.x
+	for i in 4:
+		inc.press()
+	assert_eq(_settings.volume, 100)
+	assert_gt(adapter.get_control(_find("volume_row")).size.x, row_90)
+	var inc_100 := inc_control.position.x
+	_menu.group.focus(dec)
+	for i in 4:
+		dec.press()
+	assert_eq(_settings.volume, 60)
+	assert_lt(inc_control.position.x, inc_100)
+
+
 func _buttons_in(element: UIElement) -> Array[UIButton]:
 	var buttons: Array[UIButton] = []
 	if element is UIButton:

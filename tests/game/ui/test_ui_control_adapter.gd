@@ -168,6 +168,44 @@ func test_element_at_hit_tests_the_deepest_control() -> void:
 	assert_null(adapter.element_at(Vector2(-20.0, -20.0)))
 
 
+func test_text_change_relayouts_the_owning_row() -> void:
+	var root := UIContainer.new(0, "root")
+	root.full_view = true
+	root.orientation = UIContainer.Orientation.COLUMN
+	root.margin.set_all(8.0)
+	var row := UIContainer.new(1, "row")
+	row.orientation = UIContainer.Orientation.ROW
+	row.separation = 4.0
+	var dec: UIButton = UIButton.new(2, "dec")
+	dec.text = "−"
+	var value: UIText = UIText.new(3, "value")
+	value.text = "90%"
+	value.style.font_size = 20
+	var inc: UIButton = UIButton.new(4, "inc")
+	inc.text = "+"
+	row.add(dec)
+	row.add(value)
+	row.add(inc)
+	root.add(row)
+	var adapter := UIControlAdapter.new()
+	var control := adapter.build(root)
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	control.size = Vector2(600.0, 200.0)
+	adapter.arrange(root)
+	var row_control := adapter.get_control(row) as Control
+	var value_control := adapter.get_control(value) as Label
+	var inc_control := adapter.get_control(inc) as Button
+	var value_90 := value_control.size.x
+	var row_90 := row_control.size.x
+	value.text = "100%"
+	assert_gt(adapter.get_control(row).size.x, row_90)
+	assert_gt(value_control.size.x, value_90)
+	assert_lt(value_control.position.x + value_control.size.x, inc_control.position.x)
+	var inc_at_100 := inc_control.position.x
+	value.text = "90%"
+	assert_lt(inc_control.position.x, inc_at_100)
+
+
 func test_nested_row_inside_column_is_sized_positioned_and_laid_out() -> void:
 	var root := UIContainer.new(0, "root")
 	root.full_view = true
