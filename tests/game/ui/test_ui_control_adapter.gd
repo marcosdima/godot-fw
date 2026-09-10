@@ -117,6 +117,35 @@ func test_column_centers_children_in_a_sized_container() -> void:
 	assert_eq(a.size, Vector2.ZERO)
 
 
+func test_row_layout_places_children_horizontally() -> void:
+	var root := UIContainer.new(0, "root")
+	root.full_view = true
+	root.orientation = UIContainer.Orientation.ROW
+	root.separation = 4.0
+	var a: UIButton = UIButton.new(1, "a")
+	a.text = "Alfa"
+	var b: UIButton = UIButton.new(2, "b")
+	b.text = "Beta"
+	var c: UIButton = UIButton.new(3, "c")
+	c.text = "Charlie"
+	root.add(a)
+	root.add(b)
+	root.add(c)
+	var adapter := UIControlAdapter.new()
+	var control := adapter.build(root)
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	control.size = Vector2(600.0, 200.0)
+	adapter.arrange(root)
+	var a_control := adapter.get_control(a) as Control
+	var b_control := adapter.get_control(b) as Control
+	var c_control := adapter.get_control(c) as Control
+	assert_lt(a_control.position.x, b_control.position.x)
+	assert_lt(b_control.position.x, c_control.position.x)
+	var total_width := a_control.size.x + 4.0 + b_control.size.x + 4.0 + c_control.size.x
+	assert_almost_eq(c_control.position.x + c_control.size.x, (600.0 + total_width) * 0.5, 1.0)
+	assert_eq(a.position, Vector2.ZERO)
+
+
 func test_element_at_hit_tests_the_deepest_control() -> void:
 	var root := UIContainer.new(0, "root")
 	root.full_view = true
@@ -137,3 +166,61 @@ func test_element_at_hit_tests_the_deepest_control() -> void:
 	assert_same(adapter.element_at(a_control.get_global_rect().get_center()), a)
 	assert_same(adapter.element_at(b_control.get_global_rect().get_center()), b)
 	assert_null(adapter.element_at(Vector2(-20.0, -20.0)))
+
+
+func test_nested_row_inside_column_is_sized_positioned_and_laid_out() -> void:
+	var root := UIContainer.new(0, "root")
+	root.full_view = true
+	root.orientation = UIContainer.Orientation.COLUMN
+	root.separation = 4.0
+	root.margin.set_all(8.0)
+	var head: UIButton = UIButton.new(1, "head")
+	head.text = "Alpha"
+	root.add(head)
+	var row := UIContainer.new(2, "row")
+	row.orientation = UIContainer.Orientation.ROW
+	row.separation = 4.0
+	var dec: UIButton = UIButton.new(3, "dec")
+	dec.text = "−"
+	var value: UIText = UIText.new(4, "value")
+	value.text = "100%"
+	value.style.font_size = 20
+	var inc: UIButton = UIButton.new(5, "inc")
+	inc.text = "+"
+	row.add(dec)
+	row.add(value)
+	row.add(inc)
+	root.add(row)
+	var tail: UIButton = UIButton.new(6, "tail")
+	tail.text = "Back"
+	root.add(tail)
+	var adapter := UIControlAdapter.new()
+	var control := adapter.build(root)
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	control.size = Vector2(600.0, 400.0)
+	adapter.arrange(root)
+	var row_control := adapter.get_control(row) as Control
+	var dec_control := adapter.get_control(dec) as Control
+	var value_control := adapter.get_control(value) as Control
+	var inc_control := adapter.get_control(inc) as Control
+	assert_gt(row_control.size.x, 0.0)
+	assert_gt(row_control.size.y, 0.0)
+	var expected_width := dec_control.size.x + 4.0 + value_control.size.x + 4.0 + inc_control.size.x
+	assert_almost_eq(row_control.size.x, expected_width, 1.0)
+	assert_almost_eq(dec_control.size.x, dec_control.get_minimum_size().x, 0.5)
+	assert_almost_eq(value_control.size.x, value_control.get_minimum_size().x, 0.5)
+	assert_lt(dec_control.position.x, value_control.position.x)
+	assert_lt(value_control.position.x, inc_control.position.x)
+	assert_gt(row_control.position.y, 0.0)
+	var slot_left := 8.0 + (600.0 - 16.0 - expected_width) * 0.5
+	assert_almost_eq(row_control.position.x, slot_left, 1.0)
+	assert_almost_eq(dec_control.position.y, (row_control.size.y - dec_control.size.y) * 0.5, 1.0)
+	assert_eq(root.get_children()[1], row)
+	assert_eq(row.size, Vector2.ZERO)
+	assert_eq(row.position, Vector2.ZERO)
+	assert_eq(dec.position, Vector2.ZERO)
+	assert_eq(dec.size, Vector2.ZERO)
+	assert_eq(value.position, Vector2.ZERO)
+	assert_eq(value.size, Vector2.ZERO)
+	assert_eq(inc.position, Vector2.ZERO)
+	assert_eq(inc.size, Vector2.ZERO)

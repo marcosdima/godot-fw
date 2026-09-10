@@ -280,15 +280,19 @@ func _make_stylebox(style: StyleData, highlighted: bool) -> StyleBoxFlat:
 
 
 ## Arranges the children of the given container according to its orientation,
-## measuring each child with its authored size or its control's minimum size.
-## Children use their natural width; surplus space centers them within the
-## container. Full-view containers fill their parent, other containers grow to
-## fit their content. Measured geometry is kept locally and never written back
-## to the model.
+## measuring each child with its authored size, its control's minimum size, or
+## the laid-out size of a nested container. Nested containers are arranged
+## first so their measurements feed the parent. Children use their natural
+## width; surplus space centers them within the container. Full-view containers
+## fill their parent, other containers grow to fit their content. Measured
+## geometry is kept locally and never written back to the model.
 func arrange(container: UIContainer) -> void:
 	var control: Control = _controls.get(container)
 	if control == null:
 		return
+	for child in container.get_children():
+		if child is UIContainer:
+			arrange(child as UIContainer)
 	var margin := container.margin
 	match container.orientation:
 		UIContainer.Orientation.FREE:
@@ -320,12 +324,15 @@ func arrange(container: UIContainer) -> void:
 			_place_row(container, measured, height, margin)
 
 
-## Returns the laid-out children of the given container as
-## [element, control, size] tuples, where size is the authored size when set
-## and the control's minimum size otherwise.
+## Returns the layout size of the given child: its authored size when set, the
+## laid-out size of an already-arranged nested container, and the control's
+## minimum size otherwise.
 func _size_for(element: UIElement, control: Control) -> Vector2:
 	if element.size != Vector2.ZERO:
 		return element.size
+	if element is UIContainer and not (element as UIContainer).full_view \
+			and control.size != Vector2.ZERO:
+		return control.size
 	return control.get_minimum_size()
 
 
