@@ -350,7 +350,7 @@ See [WORLD.md](world/WORLD.md).
 
 ## UI
 
-`core/ui` is an engine-light interface model: a `UIElement` tree (containers, buttons, text) with styles, selection and simple animation. The model never touches Godot. `game/ui` materializes it into `Control` nodes through `UIControlAdapter` and binds the stack, input and clock through `UIHost`. Layout is applied one way, model to view; measurements are never written back. The runtime clock that advances playbacks belongs to the game.
+`core/ui` is an engine-light interface model: a `UIElement` tree (containers, buttons, text and text input with a committed-value model) with styles, selection and simple animation. The model never touches Godot. `game/ui` materializes it into `Control` nodes through `UIControlAdapter` and binds the stack, input and clock through `UIHost`. Layout is applied one way, model to view; measurements are never written back. The runtime clock that advances playbacks belongs to the game.
 
 See [UI.md](ui/UI.md).
 

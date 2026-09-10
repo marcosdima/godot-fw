@@ -26,6 +26,12 @@ var _settings_ui: UIScreen = null
 ## The settings state edited by the settings screen.
 var _agent_settings: AgentSettings = null
 
+## The create profile screen pushed by the main menu, built on demand.
+var _create_profile_ui: UIScreen = null
+
+## The input currently being edited natively, or null.
+var _editing: UIElement = null
+
 
 ## Initializes the host from a scene: builds the standard screens on top of a
 ## fresh stack. Programmatic hosts call setup() instead.
@@ -40,6 +46,7 @@ func _ready() -> void:
 func setup(stack: ScreenStack) -> void:
 	_stack = stack
 	_adapter = UIControlAdapter.new()
+	_adapter.submitted.connect(_on_input_submitted)
 	_stack.changed.connect(_on_screen_changed)
 	_on_screen_changed(_stack.current)
 
@@ -111,10 +118,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_up"):
 		group.previous()
 	elif event.is_action_pressed("ui_accept"):
-		var focused: UIButton = group.get_focused() as UIButton
-		if focused != null:
-			focused.press()
+		var focused: UIElement = group.get_focused()
+		if focused is UIInput:
+			if _editing != focused:
+				_adapter.activate_input(focused)
+				_editing = focused
+			return
+		var button: UIButton = focused as UIButton
+		if button != null:
+			button.press()
 	elif event.is_action_pressed("ui_cancel"):
+		if _editing != null and _editing is UIInput:
+			_adapter.cancel_input(_editing)
+			_editing = null
+			return
 		if not _stack.is_empty():
 			_stack.pop()
 
@@ -130,6 +147,7 @@ func _on_screen_changed(_screen: UIElement) -> void:
 	if _current == null:
 		_adapter.release()
 		return
+	_editing = null
 	if _current_group != null and _current_group.is_connected(&"focused_changed", _on_focused_changed):
 		_current_group.disconnect(&"focused_changed", _on_focused_changed)
 	if _root_control != null and _root_control.is_connected(&"resized", _on_root_resized):
@@ -147,13 +165,30 @@ func _on_screen_changed(_screen: UIElement) -> void:
 	if _current_group != null:
 		if _current_group.get_focused() == null:
 			_current_group.focus_first()
-		_adapter.highlight(_current_group.get_focused())
 		_current_group.focused_changed.connect(_on_focused_changed)
+		_on_focused_changed(null, _current_group.get_focused())
 
 
-## Marks the newly focused element as selected in the view.
+## Synchronizes native editing and the view highlight with the group focus:
+## leaving an input commits or cancels it, entering one starts native editing.
 func _on_focused_changed(_previous: UIElement, current: UIElement) -> void:
+	if _editing != null:
+		_adapter.deactivate_input(_editing)
+		_editing = null
+	if current is UIInput:
+		_adapter.activate_input(current)
+		_editing = current
 	_adapter.highlight(current)
+
+
+## Advances the selection group after a field submits through Enter, unless the
+## focus already moved off the submitting field.
+func _on_input_submitted(element: UIElement, _text: String) -> void:
+	if _current == null or _current.group == null:
+		return
+	if _current.group.get_focused() != element:
+		return
+	_current.group.next()
 
 
 ## Creates the standard main and settings screens and shows the main menu.
@@ -161,7 +196,8 @@ func _initialize_default_screens() -> void:
 	var stack := ScreenStack.new()
 	var main_ui := UIMainMenu.build(
 		func() -> void: _open_settings(),
-		func() -> void: get_tree().quit()
+		func() -> void: get_tree().quit(),
+		func() -> void: _open_create_profile()
 	)
 	_agent_settings = AgentSettings.new()
 	_settings_ui = UISettingsMenu.build(_agent_settings, func() -> void: stack.pop())
@@ -169,6 +205,18 @@ func _initialize_default_screens() -> void:
 	register(main_ui)
 	register(_settings_ui)
 	stack.push(main_ui.root)
+
+
+## Pushes the create profile screen, building it the first time it is requested.
+func _open_create_profile() -> void:
+	if _create_profile_ui == null:
+		_create_profile_ui = UICreateProfile.build(
+			func(_profile_name: String) -> void: _stack.pop(),
+			func() -> void: _stack.pop()
+		)
+		register(_create_profile_ui)
+	if _stack.current != _create_profile_ui.root:
+		_stack.push(_create_profile_ui.root)
 
 
 ## Pushes the settings screen, building it the first time it is requested.

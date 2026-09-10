@@ -102,6 +102,7 @@ Contracts protect architectural intent, not implementation details. They may evo
 * The adapter applies the model to the view one way. Measured or computed layout geometry is never written back into the model.
 * `full_view` containers fill their parent: their authored position and size are presentation-agnostic and ignored by the adapter.
 * The model has no input bus, no UI manager and no global event system. Submit is resolved by the game as `focused.press()`, never by an implicit widget activation.
+* Text entry keeps everything that is not committed text in the engine: the model holds only the committed `UIInput.text` and `placeholder`, while the draft and its caret/selection/clipboard/IME mechanics live in the adapter's native field. Commits flow model-ward (submit, focus loss); cancel restores the committed value without re-committing it.
 * Playbacks are pure: advancing them is the game's responsibility through `advance(delta)`, and the game chooses the clock. `core/ui` never owns a loop.
 * The animation track target set is whitelisted (`ANIMATABLE_PROPERTIES`); animation is restricted to visually meaningful properties and must not animate model semantics.
 

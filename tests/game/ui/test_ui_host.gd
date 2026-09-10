@@ -57,7 +57,7 @@ func test_host_starts_on_the_main_menu() -> void:
 	var screen := _host.get_current_screen()
 	assert_eq(screen.root.name, "main_root")
 	assert_eq(_host.get_child_count(), 1)
-	assert_eq(_host.get_child(0).get_child_count(), 4)
+	assert_eq(_host.get_child(0).get_child_count(), 5)
 
 
 func test_input_navigates_the_selection_group() -> void:
@@ -182,7 +182,85 @@ func test_repeated_open_close_keeps_one_root_control_and_single_highlight() -> v
 	assert_eq(_host.get_current_screen().root.name, "main_root")
 	assert_eq(_host.get_child_count(), 1)
 	var main_control := _host.get_adapter().get_control(_host.get_current_screen().root)
-	assert_eq(main_control.get_child_count(), 4)
+	assert_eq(main_control.get_child_count(), 5)
+
+
+func _open_create_profile() -> void:
+	await wait_frames(1)
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_ENTER)
+	await wait_frames(1)
+
+
+func _create_input() -> UIInput:
+	var screen := _host.get_current_screen()
+	return _find_by_name(screen.root, "name_input") as UIInput
+
+
+func _create_field() -> LineEdit:
+	var screen := _host.get_current_screen()
+	return _host.get_adapter().get_control(_find_by_name(screen.root, "name_input")) as LineEdit
+
+
+func test_confirming_create_profile_pushes_the_form_and_starts_editing() -> void:
+	await _open_create_profile()
+	assert_eq(_host.get_current_screen().root.name, "create_root")
+	assert_same(_host._editing, _create_input())
+	assert_true(_create_field().editable)
+	assert_eq(_create_field().focus_mode, Control.FOCUS_ALL)
+
+
+func test_enter_on_the_field_commits_and_advances_to_create() -> void:
+	await _open_create_profile()
+	var field := _create_field()
+	field.text = "Nova"
+	field.emit_signal("text_submitted", "Nova")
+	var screen := _host.get_current_screen()
+	assert_eq(_create_input().text, "Nova")
+	assert_eq(screen.group.get_focused().name, "create")
+
+
+func test_moving_focus_off_the_field_commits_the_draft() -> void:
+	await _open_create_profile()
+	var field := _create_field()
+	field.text = "Rough"
+	_press(KEY_DOWN)
+	assert_eq(_create_input().text, "Rough")
+	assert_eq(_host.get_current_screen().group.get_focused().name, "create")
+
+
+func test_escape_cancels_editing_first_then_pops_the_form() -> void:
+	await _open_create_profile()
+	var field := _create_field()
+	field.text = "Draft"
+	_press(KEY_ESCAPE)
+	assert_null(_host._editing)
+	assert_eq(field.text, "")
+	assert_eq(_create_input().text, "")
+	assert_eq(_host.get_current_screen().root.name, "create_root")
+	_press(KEY_ESCAPE)
+	assert_eq(_host.get_current_screen().root.name, "main_root")
+
+
+func test_creating_with_an_empty_name_shows_the_error_and_stays() -> void:
+	await _open_create_profile()
+	var screen := _host.get_current_screen()
+	_press(KEY_DOWN)
+	(_find_by_name(screen.root, "create") as UIButton).press()
+	assert_eq((_find_by_name(screen.root, "status") as UIText).text, "Name is required.")
+	assert_eq(_host.get_current_screen().root.name, "create_root")
+
+
+func test_creating_with_a_name_submits_and_returns_to_main() -> void:
+	await _open_create_profile()
+	var screen := _host.get_current_screen()
+	var field := _create_field()
+	field.text = "Ari"
+	field.emit_signal("text_submitted", "Ari")
+	(_find_by_name(screen.root, "create") as UIButton).press()
+	assert_eq(_host.get_current_screen().root.name, "main_root")
 
 
 func _find_by_name(element: UIElement, name: String) -> UIElement:

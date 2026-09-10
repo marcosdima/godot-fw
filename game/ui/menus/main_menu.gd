@@ -9,13 +9,15 @@ enum MenuId {
 	PLAY,
 	SETTINGS,
 	QUIT,
+	CREATE_PROFILE,
 }
 
 
 ## Builds the main menu screen: a title, a column of buttons and a selection
 ## group over them. on_settings is invoked when Settings is pressed;
-## on_quit when Quit is pressed.
-static func build(on_settings: Callable, on_quit: Callable) -> UIScreen:
+## on_quit when Quit is pressed; on_profile when Create Profile is pressed and
+## is optional, in which case the button is not added.
+static func build(on_settings: Callable, on_quit: Callable, on_profile: Callable = Callable()) -> UIScreen:
 	var root := UIContainer.new(MenuId.ROOT, "main_root")
 	root.full_view = true
 	root.orientation = UIContainer.Orientation.COLUMN
@@ -35,10 +37,15 @@ static func build(on_settings: Callable, on_quit: Callable) -> UIScreen:
 	root.add(play)
 	root.add(settings)
 	root.add(quit)
+	var group_items: Array[UIElement] = [play, settings, quit]
+	if on_profile.is_valid():
+		var profile := menu_button(MenuId.CREATE_PROFILE, "Create Profile", on_profile)
+		root.add(profile)
+		group_items.append(profile)
 
 	var screen := UIScreen.new()
 	screen.root = root
-	screen.group = build_group([play, settings, quit])
+	screen.group = build_group(group_items)
 	screen.playbacks = [_title_fade(title)]
 	return screen
 
@@ -56,11 +63,11 @@ static func menu_button(id: int, label: String, action: Callable) -> UIButton:
 	return button
 
 
-## Returns a selection group over the given buttons, focused on the first one.
-static func build_group(buttons: Array[UIButton]) -> SelectionGroup:
+## Returns a selection group over the given elements, focused on the first one.
+static func build_group(items: Array[UIElement]) -> SelectionGroup:
 	var group := SelectionGroup.new()
-	for button in buttons:
-		group.add(button)
+	for item in items:
+		group.add(item)
 	return group
 
 
