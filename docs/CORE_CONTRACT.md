@@ -105,6 +105,7 @@ Contracts protect architectural intent, not implementation details. They may evo
 * Text entry keeps everything that is not committed text in the engine: the model holds only the committed `UIInput.text` and `placeholder`, while the draft and its caret/selection/clipboard/IME mechanics live in the adapter's native field. Commits flow model-ward (submit, focus loss); cancel restores the committed value without re-committing it.
 * Playbacks are pure: advancing them is the game's responsibility through `advance(delta)`, and the game chooses the clock. `core/ui` never owns a loop.
 * The animation track target set is whitelisted (`ANIMATABLE_PROPERTIES`); animation is restricted to visually meaningful properties and must not animate model semantics.
+* `UIHost` may materialize one persistent overlay (a game-owned HUD tree) above the active screen. The host owns the facade, never the tree: `set_hud` adopts any element tree the game hands over and keeps it current across screen swaps and resizes. The game may keep a controller node sharing the host's tree as long as the host's screen housekeeping leaves non-`Control` children untouched.
 
 # Cross-Module Coupling
 

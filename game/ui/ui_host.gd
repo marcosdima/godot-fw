@@ -32,6 +32,15 @@ var _create_profile_ui: UIScreen = null
 ## The input currently being edited natively, or null.
 var _editing: UIElement = null
 
+## The HUD element tree owned by the game, materialized above every screen.
+var _hud: UIElement = null
+
+## The adapter materializing the HUD layer, or null.
+var _hud_adapter: UIControlAdapter = null
+
+## The Control that materializes the HUD root, or null.
+var _hud_control: Control = null
+
 
 ## Initializes the host from a scene: builds the standard screens on top of a
 ## fresh stack. Programmatic hosts call setup() instead.
@@ -40,6 +49,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	if _stack == null:
 		_initialize_default_screens()
+	_attach_hud_control()
 
 
 ## Binds the screen stack to this host and materializes its current screen.
@@ -49,6 +59,61 @@ func setup(stack: ScreenStack) -> void:
 	_adapter.submitted.connect(_on_input_submitted)
 	_stack.changed.connect(_on_screen_changed)
 	_on_screen_changed(_stack.current)
+
+
+## Attaches the given element tree as a persistent HUD overlay shown above every
+## screen. The tree is owned by the caller; the host only materializes it and
+## keeps it current. Passing null (or the current tree again) is a no-op.
+func set_hud(hud: UIElement) -> void:
+	if _hud == hud:
+		return
+	_detach_hud()
+	_hud = hud
+	if _hud == null:
+		return
+	if _hud_adapter == null:
+		_hud_adapter = UIControlAdapter.new()
+	_hud_control = _hud_adapter.build(_hud)
+	_hud_control.name = "hud"
+	if is_inside_tree():
+		_attach_hud_control()
+
+
+## Returns the adapter materializing the HUD overlay, or null.
+func get_hud_adapter() -> UIControlAdapter:
+	return _hud_adapter
+
+
+## Releases the current HUD materialization, if any. The control is removed
+## from the tree immediately so an incoming replacement can reuse its name.
+func _detach_hud() -> void:
+	if _hud_adapter != null and _hud_control != null:
+		if _hud_control.get_parent() != null:
+			_hud_control.get_parent().remove_child(_hud_control)
+		_hud_adapter.release()
+		_hud_control = null
+
+
+## Adds the materialized HUD control to this host and lays it out. Re-adding is
+## a no-op, which lets programmatic hosts attach the HUD before entering tree.
+## While a child is still entering the tree the host refuses add_child calls
+## ("busy setting up children"), so the add is re-checked on the next frame.
+func _attach_hud_control() -> void:
+	if _hud_adapter == null or _hud_control == null:
+		return
+	if _hud_control.get_parent() != self:
+		_finish_attach_hud.call_deferred(_hud_control)
+	if _hud is UIContainer:
+		_hud_adapter.arrange(_hud as UIContainer)
+
+
+## Runs the delayed HUD add after the host finished setting up its children.
+## Idempotent: later calls find the control already parented and bail out.
+func _finish_attach_hud(target: Node) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if target.get_parent() != self:
+		add_child(target)
 
 
 ## Registers a screen bundle so it can be pushed by the stack.
@@ -77,6 +142,8 @@ func get_adapter() -> UIControlAdapter:
 func _process(delta: float) -> void:
 	if _adapter != null:
 		_adapter.tick(delta)
+	if _hud_adapter != null:
+		_hud_adapter.tick(delta)
 	if _pending_arrange:
 		if _root_control != null and _root_control.size != Vector2.ZERO:
 			var root: UIContainer = _current.root
@@ -85,10 +152,13 @@ func _process(delta: float) -> void:
 			_pending_arrange = false
 
 
-## Re-arranges the current screen whenever the engine resizes its root control.
+## Re-arranges the current screen and the HUD whenever the engine resizes their
+## shared root control.
 func _on_root_resized() -> void:
 	if _adapter != null and _current != null and _current.root is UIContainer:
 		_adapter.arrange(_current.root)
+	if _hud_adapter != null and _hud is UIContainer:
+		_hud_adapter.arrange(_hud as UIContainer)
 
 
 ## Maps mouse position to the model: hovering a button moves the selection
@@ -156,9 +226,13 @@ func _on_screen_changed(_screen: UIElement) -> void:
 		_root_control.resized.disconnect(_on_root_resized)
 	_root_control = _adapter.build(_current.root)
 	for child in get_children():
-		if child != _root_control:
+		if child == _root_control or (_hud_control != null and child == _hud_control):
+			continue
+		if child is Control:
 			remove_child(child)
 	add_child(_root_control)
+	if _hud_control != null and _hud_control.get_parent() != self:
+		add_child(_hud_control)
 	_root_control.resized.connect(_on_root_resized)
 	_pending_arrange = true
 	for playback in _current.playbacks:
