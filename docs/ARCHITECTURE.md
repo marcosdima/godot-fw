@@ -11,7 +11,7 @@ It is divided into two main domains:
 
 The goal is to develop the foundation and a working game template in the same project while keeping game-specific logic isolated from the reusable framework.
 
-`game` and `game/docs/` belong to prototype branches and do not exist on `main`. On `main` only `core`, `tests` and `docs` live.
+`game` and `game/docs/` historically belonged to prototype branches. Today the game-side UI runs on `main` as the working vertical slice of the reusable UI domain; game-specific documentation continues to live in `game/`.
 
 ## Project Structure
 
@@ -38,11 +38,33 @@ project/
 │   ├── primitives/
 │   │   ├── element.gd
 │   │   └── handler.gd
+│   ├── ui/
+│   │   ├── animation/
+│   │   │   ├── track.gd
+│   │   │   ├── ui_animation_definition.gd
+│   │   │   └── ui_animation_playback.gd
+│   │   ├── margin.gd
+│   │   ├── screen_stack.gd
+│   │   ├── selection_group.gd
+│   │   ├── style_data.gd
+│   │   ├── ui_button.gd
+│   │   ├── ui_container.gd
+│   │   ├── ui_element.gd
+│   │   └── ui_text.gd
 │   └── world/
 │       ├── area.gd
 │       ├── update_pipeline.gd
 │       └── world.gd
+├── game/
+│   └── ui/
+│       ├── menus/
+│       ├── main_menu.tscn
+│       ├── screen.gd
+│       ├── ui_control_adapter.gd
+│       └── ui_host.gd
 ├── tests/
+│   ├── core/
+│   └── game/
 ├── docs/
 └── project.godot
 ```
@@ -70,6 +92,7 @@ The documentation tree mirrors the `core/` folder structure; transversal documen
 * [INVENTORY.md](entities/modules/INVENTORY.md): Inventory domain: opaque per-entity item storage keyed by instance identity.
 * [RULES.md](entities/modules/rules/RULES.md): Rules domain: reactive per-entity relations that react to module facts.
 * [WORLD.md](world/WORLD.md): World domain: environment, entity lifecycle management, dimension-agnostic areas, update cycle and `UpdatePipeline`.
+* [UI.md](ui/UI.md): UI domain: engine-light interface model in `core/ui` and the materializing adapter in `game/ui`.
 
 ## Dependency Rules
 
@@ -221,6 +244,8 @@ Core never starts timers, threads or engine processes, and never reads an engine
 
 This keeps `core` engine-independent and leaves the choice of clock entirely to the game. See WORLD.md for the concrete update cycle and its pipeline.
 
+The same rule holds for UI: `core/ui` playbacks advance only through `advance(delta)` calls made by the game, and the game decides the clock. See UI.md.
+
 # Signals
 
 Systems may expose signals to notify other systems when relevant state changes occur.
@@ -236,6 +261,10 @@ Implemented signals:
 * `Progression`: `value_changed`.
 * `Area`: `occupant_entered`, `occupant_exited`.
 * `UpdatePipeline`: the phase signals, including `state`.
+* `UIElement`: `changed`, `child_added`, `child_removed`.
+* `SelectionGroup`: `focused_changed`.
+* `ScreenStack`: `changed`.
+* `UIAnimationPlayback`: `finished`, `stopped`.
 
 Signals should allow systems such as UI, animation, audio, gameplay logic, or rules to react without requiring the emitting module to know about those consumers.
 
@@ -318,6 +347,12 @@ See [RULES.md](entities/modules/rules/RULES.md).
 `World` represents the environment in which entities exist: registration, spawning and removal, the entity collection and the update cycle. `UpdatePipeline` coordinates `Phase.STATE` and any future phases; modules connect directly to phase signals and the World never knows concrete modules. `Area` is a dimension-agnostic region tracking occupants; real spatial detection belongs to the game.
 
 See [WORLD.md](world/WORLD.md).
+
+## UI
+
+`core/ui` is an engine-light interface model: a `UIElement` tree (containers, buttons, text) with styles, selection and simple animation. The model never touches Godot. `game/ui` materializes it into `Control` nodes through `UIControlAdapter` and binds the stack, input and clock through `UIHost`. Layout is applied one way, model to view; measurements are never written back. The runtime clock that advances playbacks belongs to the game.
+
+See [UI.md](ui/UI.md).
 
 ## Update Cycle Summary
 

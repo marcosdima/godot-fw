@@ -18,7 +18,7 @@ Contracts protect architectural intent, not implementation details. They may evo
 
 * Avoid ownership cycles and unintended lifetime cycles: owned objects must not keep their owner alive.
 * Owner-to-owned references are strong: `Entity -> Modules`, `Entity -> EntityResolvers`, `Modules -> Module`, `EntityResolvers -> Resolver`, `RulesModule -> Rule`.
-* Back-references to the owner are weak: `Module.entity`, `Resolver.entity`, `Rule._entity`, the facade references, and `EffectApplication.condition` (back to its owning condition).
+* Back-references to the owner are weak: `Module.entity`, `Resolver.entity`, `Rule._entity`, the facade references, `EffectApplication.condition` (back to its owning condition), `UIElement.parent` and `UIAnimationPlayback.element`.
 * `WeakRef` is the current mechanism that realizes this invariant. The invariant is the contract; the mechanism may change if a better one appears.
 * A strong back-reference would form a `RefCounted` cycle: the objects in the cycle would never reach a zero reference count and entities would never be freed.
 
@@ -95,6 +95,16 @@ Contracts protect architectural intent, not implementation details. They may evo
 * A rule produces consequences by calling public module APIs. Rules never mutate module internals directly.
 * There are no identifiers, priorities or evaluation order for rules. Rules reacting to the same fact run in connection order, and core guarantees no ordering across them.
 
+# UI
+
+* `core/ui` is engine-light: its classes extend `RefCounted`, never `Node`, and must not read engine clocks, start timers or spawn threads. The engine, the clock and the input mapping belong to `game`.
+* UI signals are effective-only: emitted when state actually changes, not on every attempt.
+* The adapter applies the model to the view one way. Measured or computed layout geometry is never written back into the model.
+* `full_view` containers fill their parent: their authored position and size are presentation-agnostic and ignored by the adapter.
+* The model has no input bus, no UI manager and no global event system. Submit is resolved by the game as `focused.press()`, never by an implicit widget activation.
+* Playbacks are pure: advancing them is the game's responsibility through `advance(delta)`, and the game chooses the clock. `core/ui` never owns a loop.
+* The animation track target set is whitelisted (`ANIMATABLE_PROPERTIES`); animation is restricted to visually meaningful properties and must not animate model semantics.
+
 # Cross-Module Coupling
 
 * Direct module-to-module access at operation time is allowed when sensible.
@@ -120,3 +130,4 @@ Deliberately undecided. These are not necessarily problems; they are areas expec
 * The future of the single `EffectApplication` abstraction.
 * The future architecture of the pipeline (new phases, ordering, priorities).
 * Constraints on cross-module coupling, if direct access ever proves insufficient.
+* UI: whether the adapter should delegate to Godot `Container`/`Control` layout instead of its bespoke `arrange`, and which high-level widget types (text input, scroll, panels) the model will need.
