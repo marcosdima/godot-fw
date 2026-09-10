@@ -229,6 +229,7 @@ func _on_screen_changed(_screen: UIElement) -> void:
 	_root_control.resized.connect(_on_root_resized)
 	_pending_arrange = true
 	for playback in _current.playbacks:
+		playback.restart()
 		_adapter.add_playback(playback)
 	_current_group = _current.group
 	if _current_group != null:

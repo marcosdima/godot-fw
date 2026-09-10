@@ -184,6 +184,65 @@ func test_stop_emits_stopped_and_holds_final_state() -> void:
 	assert_signal_emitted(playback, "stopped")
 
 
+func test_restart_rearms_elapsed_and_done() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 1.0
+	definition.add_track(&"modulate", 0.0)
+	var element: UIElement = UIElement.new(0, "element")
+	var playback := UIAnimationPlayback.new(element, definition)
+	playback.advance(1.0)
+	assert_true(playback.is_finished())
+	assert_eq(playback.value_for(&"modulate", 1.0), 0.0)
+	playback.restart()
+	assert_false(playback.is_finished())
+	assert_eq(playback.eased_progress(), 0.0)
+	assert_eq(playback.value_for(&"modulate", 1.0), 1.0)
+
+
+func test_restart_allows_finished_to_fire_again() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 1.0
+	definition.add_track(&"modulate", 0.0)
+	var element: UIElement = UIElement.new(0, "element")
+	var playback := UIAnimationPlayback.new(element, definition)
+	var fires := [0]
+	playback.finished.connect(func() -> void: fires[0] += 1)
+	playback.advance(1.0)
+	assert_eq(fires[0], 1)
+	playback.restart()
+	playback.advance(1.0)
+	assert_eq(fires[0], 2)
+
+
+func test_restart_re_plays_single_swing_phase() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 2.0
+	definition.swing = true
+	var element: UIElement = UIElement.new(0, "element")
+	var playback := UIAnimationPlayback.new(element, definition)
+	playback.advance(0.5)
+	assert_almost_eq(playback.eased_progress(), 0.5, 0.001)
+	playback.restart()
+	assert_almost_eq(playback.eased_progress(), 0.0, 0.001)
+	playback.advance(1.0)
+	assert_almost_eq(playback.eased_progress(), 1.0, 0.001)
+
+
+func test_restart_after_stop_re_arms_and_can_finish() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 1.0
+	definition.add_track(&"modulate", 0.0)
+	var element: UIElement = UIElement.new(0, "element")
+	var playback := UIAnimationPlayback.new(element, definition)
+	playback.advance(0.5)
+	playback.stop()
+	assert_true(playback.is_finished())
+	playback.restart()
+	assert_false(playback.is_finished())
+	playback.advance(1.0)
+	assert_true(playback.is_finished())
+
+
 func test_property_without_track_comes_back_unchanged() -> void:
 	var definition := UIAnimationDefinition.new()
 	definition.duration = 1.0

@@ -57,6 +57,16 @@ func stop() -> void:
 	stopped.emit()
 
 
+## Re-arms the playback for a new run: resets the clock and clears the finished
+## state so finished/stopped can fire again on the next run. The element and
+## definition are unchanged, and the base value is read live from the model, so
+## the game must pre-roll (set the model property) before restarting when the
+## start value differs from the authored one. No signal is emitted.
+func restart() -> void:
+	_elapsed = 0.0
+	_done = false
+
+
 ## Returns the value of the given property composited by its tracks: the base
 ## value with every matching track applied in order. Properties without a track
 ## come back unchanged. The element itself is never mutated.
@@ -100,8 +110,9 @@ func eased_progress() -> float:
 	return _ease(raw_progress)
 
 
-## Advances the internal clock by delta without applying easing or limits, for
-## deterministic testing of unfinished progress.
+## Seeks the internal clock without applying easing or limits, for deterministic
+## testing of unfinished progress. This is a testing helper; restart() is the
+## lifecycle verb for re-running a playback.
 func set_time(value: float) -> void:
 	_elapsed = value
 	_done = false

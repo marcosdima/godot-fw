@@ -251,7 +251,7 @@ Core never starts timers, threads or engine processes, and never reads an engine
 
 This keeps `core` engine-independent and leaves the choice of clock entirely to the game. See WORLD.md for the concrete update cycle and its pipeline.
 
-The same rule holds for UI: `core/ui` playbacks advance only through `advance(delta)` calls made by the game, and the game decides the clock. See UI.md.
+The same rule holds for UI: `core/ui` playbacks advance only through `advance(delta)` calls made by the game, and the game decides the clock. Screen entry playbacks (`UIScreen.playbacks`) are re-armed and re-registered by the host every time a screen becomes current, so they replay per show rather than once. See UI.md.
 
 # Signals
 

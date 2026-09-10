@@ -62,7 +62,15 @@ UI animation is data plus pure playback; `core/` never reads a clock.
 
 * `Track`: a `property`, a target `to` value and a `blend` (`OVERRIDE`, `ADD`, `MULTIPLY`). Target is `Vector2` for `position`, `size` and `scale`, `float` for `modulate`.
 * `UIAnimationDefinition`: `duration`, `delay`, `easing` (`LINEAR`, `EASE_IN`, `EASE_OUT`, `EASE_IN_OUT`), `loop` (`NONE`, `RESTART`, `PING_PONG`), optional `swing` (out-and-back: progress travels to `1.0` at the midpoint of each iteration and returns to `0.0` at its end, so the value always finishes exactly at its base), and an ordered `tracks` list built with `add_track`. Only properties in `ANIMATABLE_PROPERTIES` (`position`, `size`, `scale`, `modulate`) are accepted; anything else errors at build time.
-* `UIAnimationPlayback`: instantiated for a single element, advanced by the game clock with `advance(delta)`. `value_for(property, base)` returns the composed value; `set_time` seeks; `stop` and `is_finished` report state. The element reference is weak. Blend math: `OVERRIDE` lerps base toward target, `ADD` adds `target * progress`, `MULTIPLY` scales by `target.lerp(1, progress)`.
+* `UIAnimationPlayback`: instantiated for a single element, advanced by the game clock with `advance(delta)`. `value_for(property, base)` returns the composed value; `set_time` seeks (a testing helper); `stop` and `is_finished` report state; `restart()` re-arms a finished or stopped playback for a new run — it resets the clock and clears the finished state so `finished`/`stopped` can fire again. The element reference is weak. Blend math: `OVERRIDE` lerps base toward target, `ADD` adds `target * progress`, `MULTIPLY` scales by `target.lerp(1, progress)`.
+
+## Lifecycle and value contract
+
+Screens register their entry animations in `UIScreen.playbacks`. The host re-arms and re-registers them every time a screen becomes current — `playback.restart()` before `add_playback` — so an entry animation replays on every show, not just the first. Re-showing a screen therefore re-fades the titles instead of holding them at the finished state.
+
+The base value is read live from the element model at evaluation time: there is no capture-at-start snapshot, and animated values never write into the `UIElement` model (they are view-only). Pre-roll therefore means the game sets the model property before registering the playback — the title fades pre-roll `title.modulate = 0.0` and the fade animates the control from there.
+
+Multiple playbacks on the *same* element and property are applied in registration order and only the last one's value sticks: deterministically last-registered-wins. This is **not** a supported composition mechanism — compose by adding tracks to a single playback (tracks layer in track order) or by animating separate properties. Transients belong in their own playback using `ADD`/`MULTIPLY`/`swing`.
 
 # Game Boundary
 
@@ -73,8 +81,9 @@ UI animation is data plus pure playback; `core/` never reads a clock.
 * Layout is applied one way, model to view. Measured geometry (e.g. control minimum sizes during `arrange`) is kept locally and never written back to the model.
 * `full_view` containers fill their parent: their authored position and size are ignored by the adapter.
 * Styles apply as theme overrides (`StyleBoxFlat` built from `StyleData`); focus state is rendered by replacing the `normal` stylebox of the focused `Button`.
-* The adapter tracks signal connections it makes and disconnects them on `release()`.
-* Playbacks registered through `add_playback` are driven by the clock the game provides, not by any core timer.
+* The adapter tracks every signal connection it makes (as `[object, signal_name, callable]` entries) and disconnects them on `release()` — including the `finished`/`stopped` connections `add_playback` creates. A playback that finishes or stops is removed from the tick list and its connections are disconnected on the spot, so re-registering the same playback across re-shows never accumulates handlers.
+* Playbacks registered through `add_playback` are driven by the clock the game provides, not by any core timer. The adapter iterates a copy of its playback list each tick, so a playback finishing mid-tick does not skip the one after it.
+* Animation is not arbitrated against layout (documented, not resolved): `modulate` is safe to animate on laid-out elements, but animating `position`/`size` of a laid-out child may be reclaimed by the next `arrange`. Prefer `modulate` for entrances and transients; there is no arbitrator, priority or snapshot mechanism.
 
 `UIHost` is the game-side Control that binds a `ScreenStack` (handed in through `setup`), a materializing adapter and the current `UIScreen`. It maps game input (`ui_up`/`ui_down`/`ui_accept`/`ui_cancel`) onto the screen's selection group and submits as `focused.press()`, ticks playbacks in `_process`, and rebuilds the view when the stack changes. For text fields the host keeps the editing lifecycle: group focus on a field starts native editing (`activate_input`), leaving it commits, `ui_accept` while editing is the field's own Enter-commit and advances the group, `ui_cancel` while editing cancels the draft (`cancel_input`) so the next `ui_cancel` pops the screen, and clicking a field that is focused but no longer editing restarts editing. The host stays a generic host: it does not decide which screens exist.
 
@@ -86,7 +95,7 @@ The host also supports one persistent overlay: a game-owned HUD element tree mat
 
 `game/ui/menus/` contains the reference screens built purely from the model kinds above:
 
-* `main_menu.gd` — a column of buttons (`COLUMN` layout) with a fade-in title playback.
+* `main_menu.gd` — a column of buttons (`COLUMN` layout) with a fade-in title playback that replays whenever the menu reopens.
 * `settings_menu.gd` — a second, stateful use case: `Fullscreen` and `Resolution` are cycle buttons, `Volume` is a stepper row (`[ − ][ value ][ + ]`) that is the reference `ROW` layout. The edited values live in `game/ui/agent_settings.gd`, an engine-light settings object owned by the game; the UI renders and mutates it but never owns the state.
 * `create_profile.gd` — the text-input slice: a `label + UIInput` row (authored sizes) feeding a Create action, an empty-name error line, and a Back button. Selecting the field starts editing, Enter commits and advances to Create, Escape cancels the draft before popping.
 * `contracts_menu.gd` — the selectable-list slice. Eight contract entries + a footer are built in a loop from `CONTRACTS` data: a status line above the entries reflects selection through `focused_changed`, and a nested footer `ROW` (hint + Exit) is the cross-depth selection reference reached by wrap-around next/previous. Entries compute their natural size (the longest title drives the column width), and the group enables per-entry mouse hover/click submission; there is no scrolling or clipping, so a taller dataset overflows the viewport by design. The slice deliberately does not introduce a generic `List` abstraction, virtualization or a theme system — those wait for a real requirement (per AGENT_GUIDELINES, a genuine scrolling need would first be escalated before touching `core/`).

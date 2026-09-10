@@ -166,17 +166,42 @@ func _on_input_focus_exited(element: UIElement) -> void:
 	_commit_input(element, control)
 
 
-## Registers a playback so tick() drives it against its element's control.
+## Registers a playback so tick() drives it against its element's control. The
+## finished/stopped connections are tracked like every other connection, so a
+## playback that finishes or stops is removed and disconnected here and release
+## clears it too. Re-registering the same playback across re-shows therefore
+## never accumulates handlers.
 func add_playback(playback: UIAnimationPlayback) -> void:
 	_playbacks.append(playback)
-	playback.finished.connect(func() -> void: _playbacks.erase(playback))
-	playback.stopped.connect(func() -> void: _playbacks.erase(playback))
+	var on_finished := func() -> void: _remove_playback(playback)
+	var on_stopped := func() -> void: _remove_playback(playback)
+	playback.finished.connect(on_finished)
+	playback.stopped.connect(on_stopped)
+	_connections.append([playback, &"finished", on_finished])
+	_connections.append([playback, &"stopped", on_stopped])
+
+
+## Removes a finished or stopped playback from the tick list and disconnects the
+## lifecycle signals it registered. Harmless when called more than once.
+func _remove_playback(playback: UIAnimationPlayback) -> void:
+	_playbacks.erase(playback)
+	for connection in _connections.duplicate():
+		if connection[0] != playback:
+			continue
+		var signal_object: Object = connection[0]
+		var signal_name: StringName = connection[1]
+		var callable: Callable = connection[2]
+		if signal_object.is_connected(signal_name, callable):
+			signal_object.disconnect(signal_name, callable)
+		_connections.erase(connection)
 
 
 ## Advances every registered playback by the runtime-provided delta and applies
-## the resulting values to the materialized controls.
+## the resulting values to the materialized controls. The playback list is
+## iterated on a copy so a playback finishing mid-tick does not skip the one
+## after it.
 func tick(delta: float) -> void:
-	for playback in _playbacks:
+	for playback in _playbacks.duplicate():
 		playback.advance(delta)
 		var element: UIElement = playback.element
 		if element == null:
