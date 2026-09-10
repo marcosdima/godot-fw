@@ -8,16 +8,18 @@ enum MenuId {
 	TITLE,
 	PLAY,
 	SETTINGS,
+	CONTRACTS,
 	QUIT,
 	CREATE_PROFILE,
 }
 
 
 ## Builds the main menu screen: a title, a column of buttons and a selection
-## group over them. on_settings is invoked when Settings is pressed;
-## on_quit when Quit is pressed; on_profile when Create Profile is pressed and
-## is optional, in which case the button is not added.
-static func build(on_settings: Callable, on_quit: Callable, on_profile: Callable = Callable()) -> UIScreen:
+## group over them. on_settings is invoked when Settings is pressed; on_quit
+## when Quit is pressed; on_contracts when Contracts is pressed. on_profile,
+## when valid, adds the Create Profile button; the other callbacks are always
+## wired to their buttons.
+static func build(on_settings: Callable, on_quit: Callable, on_contracts: Callable = Callable(), on_profile: Callable = Callable()) -> UIScreen:
 	var root := UIContainer.new(MenuId.ROOT, "main_root")
 	root.full_view = true
 	root.orientation = UIContainer.Orientation.COLUMN
@@ -33,11 +35,13 @@ static func build(on_settings: Callable, on_quit: Callable, on_profile: Callable
 
 	var play := menu_button(MenuId.PLAY, "Play", func() -> void: pass)
 	var settings := menu_button(MenuId.SETTINGS, "Settings", on_settings)
+	var contracts := menu_button(MenuId.CONTRACTS, "Contracts", on_contracts if on_contracts.is_valid() else func() -> void: pass)
 	var quit := menu_button(MenuId.QUIT, "Quit", on_quit)
 	root.add(play)
 	root.add(settings)
+	root.add(contracts)
 	root.add(quit)
-	var group_items: Array[UIElement] = [play, settings, quit]
+	var group_items: Array[UIElement] = [play, settings, contracts, quit]
 	if on_profile.is_valid():
 		var profile := menu_button(MenuId.CREATE_PROFILE, "Create Profile", on_profile)
 		root.add(profile)

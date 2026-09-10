@@ -62,7 +62,7 @@ func test_host_starts_on_the_main_menu() -> void:
 	var screen := _host.get_current_screen()
 	assert_eq(screen.root.name, "main_root")
 	assert_eq(_host.get_child_count(), 1)
-	assert_eq(_host.get_child(0).get_child_count(), 5)
+	assert_eq(_host.get_child(0).get_child_count(), 6)
 
 
 func test_main_menu_buttons_keep_a_font_color_distinct_from_the_surface() -> void:
@@ -90,7 +90,7 @@ func test_input_navigates_the_selection_group() -> void:
 	screen.group.focused_changed.connect(func(_p: UIElement, current: UIElement) -> void: focus_order.append(current.name))
 	_press(KEY_DOWN)
 	_press(KEY_DOWN)
-	assert_eq(focus_order, ["settings", "quit"])
+	assert_eq(focus_order, ["settings", "contracts"])
 
 
 func test_confirming_settings_pushes_the_settings_screen() -> void:
@@ -118,6 +118,7 @@ func test_quit_button_invokes_quit_callback() -> void:
 	var quitting := [false]
 	var menu: UIScreen = UIMainMenu.build(func() -> void: pass, func() -> void: quitting[0] = true)
 	menu.group.focus_first()
+	menu.group.next()
 	menu.group.next()
 	menu.group.next()
 	(menu.group.get_focused() as UIButton).press()
@@ -205,7 +206,7 @@ func test_repeated_open_close_keeps_one_root_control_and_single_highlight() -> v
 	assert_eq(_host.get_current_screen().root.name, "main_root")
 	assert_eq(_host.get_child_count(), 1)
 	var main_control := _host.get_adapter().get_control(_host.get_current_screen().root)
-	assert_eq(main_control.get_child_count(), 5)
+	assert_eq(main_control.get_child_count(), 6)
 
 
 func test_non_control_node_children_survive_screen_swaps() -> void:
@@ -245,6 +246,65 @@ func test_scene_auto_composes_the_host_like_compose() -> void:
 	assert_eq(host.get_current_screen().root.name, "main_root")
 
 
+func test_contracts_screen_lists_and_navigates_with_wrap() -> void:
+	await _open_contracts()
+	var screen := _host.get_current_screen()
+	assert_eq(screen.root.name, "contracts_root")
+	assert_eq(screen.group.get_items().size(), UIContractsMenu.CONTRACTS.size() + 1)
+	assert_eq(screen.group.get_focused().name, "sector_7_rendezvous")
+	var status := _host.get_adapter().get_control(_find_by_name(screen.root, "status")) as Label
+	assert_eq(status.text, "Selection: Sector 7 Rendezvous — Meet the courier at the off grid depot.")
+	_press(KEY_DOWN)
+	assert_eq(screen.group.get_focused().name, "asset_recovery")
+	for i in UIContractsMenu.CONTRACTS.size() - 3:
+		_press(KEY_DOWN)
+	assert_eq(screen.group.get_focused().name, "containment_breach_extract_the_s_2_prototype_unit")
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	assert_eq(screen.group.get_focused().name, "exit")
+	_press(KEY_DOWN)
+	assert_eq(screen.group.get_focused().name, "sector_7_rendezvous")
+
+
+func test_contracts_mouse_hover_selects_and_click_submits() -> void:
+	await _open_contracts()
+	await _prepare_geometry()
+	var screen := _host.get_current_screen()
+	assert_eq(screen.group.get_focused().name, "sector_7_rendezvous")
+	_mouse_motion(_button_center("asset_recovery"))
+	assert_eq(screen.group.get_focused().name, "asset_recovery")
+	_mouse_click(_button_center("asset_recovery"))
+	await wait_frames(1)
+	assert_eq(_host.get_current_screen().root.name, "main_root")
+
+
+func test_contracts_click_outside_the_entries_does_not_submit() -> void:
+	await _open_contracts()
+	await _prepare_geometry()
+	_mouse_click(Vector2(5, 5))
+	await wait_frames(1)
+	assert_eq(_host.get_current_screen().root.name, "contracts_root")
+
+
+func test_escape_from_contracts_returns_to_main() -> void:
+	await _open_contracts()
+	_press(KEY_ESCAPE)
+	await wait_frames(1)
+	assert_eq(_host.get_current_screen().root.name, "main_root")
+
+
+func test_reopening_contracts_keeps_one_root_screen() -> void:
+	await _open_contracts()
+	_press(KEY_ESCAPE)
+	await wait_frames(1)
+	_press(KEY_ENTER)
+	await wait_frames(1)
+	assert_eq(_host.get_current_screen().root.name, "contracts_root")
+	assert_eq(_host.get_child_count(), 1)
+	var root_control := _host.get_adapter().get_control(_host.get_current_screen().root)
+	assert_eq(root_control.get_child_count(), UIContractsMenu.CONTRACTS.size() + 3)
+
+
 func _press_on(target: UIHost, keycode: Key) -> void:
 	var event := InputEventKey.new()
 	event.keycode = keycode
@@ -255,6 +315,15 @@ func _press_on(target: UIHost, keycode: Key) -> void:
 func _open_create_profile() -> void:
 	await wait_frames(1)
 	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_ENTER)
+	await wait_frames(1)
+
+
+func _open_contracts() -> void:
+	await wait_frames(1)
 	_press(KEY_DOWN)
 	_press(KEY_DOWN)
 	_press(KEY_ENTER)

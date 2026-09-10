@@ -18,6 +18,9 @@ var _settings_ui: UIScreen = null
 ## The create profile screen, built on demand.
 var _create_profile_ui: UIScreen = null
 
+## The contracts list screen, built on demand.
+var _contracts_ui: UIScreen = null
+
 
 ## Composes the standard game screens on top of the given host and shows the
 ## main menu. Synchronous; call after the host is inside a tree so building the
@@ -54,6 +57,7 @@ func _setup(host: UIHost, quit: Callable) -> void:
 	var main_ui := UIMainMenu.build(
 		_open_settings,
 		quit,
+		_open_contracts,
 		_open_create_profile,
 	)
 	_settings = AgentSettings.new()
@@ -68,6 +72,22 @@ func _setup(host: UIHost, quit: Callable) -> void:
 func _open_settings() -> void:
 	if _settings_ui != null and _stack.current != _settings_ui.root:
 		_stack.push(_settings_ui.root)
+
+
+## Pushes the contracts list screen, building it the first time it is requested.
+func _open_contracts() -> void:
+	if _contracts_ui == null:
+		var host := _host_ref.get_ref() as UIHost
+		if host == null:
+			return
+		_contracts_ui = UIContractsMenu.build(
+			UIContractsMenu.CONTRACTS,
+			func(_contract: Dictionary) -> void: _stack.pop(),
+			func() -> void: _stack.pop(),
+		)
+		host.register(_contracts_ui)
+	if _stack.current != _contracts_ui.root:
+		_stack.push(_contracts_ui.root)
 
 
 ## Pushes the create profile screen, building it the first time it is requested.

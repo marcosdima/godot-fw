@@ -59,6 +59,10 @@ project/
 │   └── ui/
 │       ├── hud/
 │       ├── menus/
+│       │   ├── contracts_menu.gd
+│       │   ├── create_profile.gd
+│       │   ├── main_menu.gd
+│       │   └── settings_menu.gd
 │       ├── agent_settings.gd
 │       ├── app_ui.gd
 │       ├── main_menu.tscn
@@ -353,7 +357,7 @@ See [WORLD.md](world/WORLD.md).
 
 ## UI
 
-`core/ui` is an engine-light interface model: a `UIElement` tree (containers, buttons, text and text input with a committed-value model) with styles, selection and simple animation. The model never touches Godot. `game/ui` materializes it into `Control` nodes through `UIControlAdapter` and binds the stack, input and clock through `UIHost`; the game composes its screens on the host through `AppUI`. Layout is applied one way, model to view; measurements are never written back. The runtime clock that advances playbacks belongs to the game.
+`core/ui` is an engine-light interface model: a `UIElement` tree (containers, buttons, text and text input with a committed-value model) with styles, selection and simple animation. The model never touches Godot. `game/ui` materializes it into `Control` nodes through `UIControlAdapter` and binds the stack, input and clock through `UIHost`; the game composes its screens on the host through `AppUI`. Layout is applied one way, model to view; measurements are never written back. The runtime clock that advances playbacks belongs to the game. Reference screens for the supported model kinds live in `game/ui/menus/`; they are built from the same model→adapter path the HUD and any future screens use — including data-driven list screens (see `contracts_menu.gd`), which keep the generous unfitted styling of the current slice rather than a list abstraction.
 
 See [UI.md](ui/UI.md).
 

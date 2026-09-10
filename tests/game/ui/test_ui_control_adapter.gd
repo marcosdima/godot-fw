@@ -17,8 +17,8 @@ func after_each() -> void:
 func test_build_creates_one_control_per_element() -> void:
 	var root_control := _adapter.build(_main.root)
 	assert_not_null(root_control)
-	assert_eq(_main.root.get_children().size(), 4)
-	assert_eq(root_control.get_child_count(), 4)
+	assert_eq(_main.root.get_children().size(), 5)
+	assert_eq(root_control.get_child_count(), 5)
 
 
 func test_text_is_materialized_into_labels_and_buttons() -> void:

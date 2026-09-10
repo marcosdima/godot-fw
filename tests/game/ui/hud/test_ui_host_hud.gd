@@ -87,7 +87,7 @@ func test_hud_survives_pushes_and_pops() -> void:
 	await get_tree().process_frame
 	assert_eq(_host.get_current_screen().root.name, "main_root")
 	assert_same(hud_control.get_parent(), _host)
-	for i in 2:
+	for i in 3:
 		_press(KEY_DOWN)
 	_press(KEY_ENTER)
 	await get_tree().process_frame
@@ -136,6 +136,39 @@ func test_set_hud_replaces_the_overlay_keeping_a_single_control() -> void:
 			huds.append(child)
 	assert_eq(huds.size(), 1)
 	assert_false(is_instance_valid(previous))
+
+
+func test_hud_persists_over_the_contracts_screen() -> void:
+	var hud_control := _hud_control()
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_ENTER)
+	await get_tree().process_frame
+	assert_eq(_host.get_current_screen().root.name, "contracts_root")
+	assert_same(hud_control.get_parent(), _host)
+	_press(KEY_ESCAPE)
+	await get_tree().process_frame
+	assert_eq(_host.get_current_screen().root.name, "main_root")
+	assert_same(hud_control.get_parent(), _host)
+
+
+func test_resize_rearranges_the_contracts_screen_and_keeps_the_hud() -> void:
+	await _prepare_geometry()
+	_press(KEY_DOWN)
+	_press(KEY_DOWN)
+	_press(KEY_ENTER)
+	await get_tree().process_frame
+	var screen := _host.get_current_screen()
+	assert_eq(screen.root.name, "contracts_root")
+	var first_entry := _host.get_adapter().get_control(_find_by_name(screen.root, "sector_7_rendezvous")) as Control
+	assert_gt(first_entry.size.y, 0.0)
+	_host.size = Vector2(400.0, 300.0)
+	await get_tree().process_frame
+	_host.get_adapter().arrange(screen.root)
+	_host.get_hud_adapter().arrange(_demo.get_hud() as UIContainer)
+	var bar := _host.get_hud_adapter().get_control(UIHud.find_id(_demo.get_hud(), UIHud.HudId.VITALITY_BAR)) as Control
+	assert_eq(bar.get_global_rect().position, UIHud.VITALITY_BAR_POSITION)
+	assert_gt(first_entry.size.y, 0.0)
 
 
 func _find_by_name(element: UIElement, name: String) -> UIElement:
