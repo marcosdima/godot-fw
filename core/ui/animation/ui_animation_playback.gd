@@ -76,10 +76,10 @@ func is_finished() -> bool:
 
 
 ## Returns the eased progress in the range 0.0 to 1.0 for the current state,
-## after delay and easing have been applied.
+## after delay and easing have been applied. For swing definitions the value
+## passes through 1.0 at the midpoint and comes back to 0.0 at the end, so a
+## finished swing reports its base value instead of holding the target.
 func eased_progress() -> float:
-	if _done:
-		return 1.0
 	var time := _elapsed_time()
 	if time <= 0.0:
 		return 0.0
@@ -95,6 +95,8 @@ func eased_progress() -> float:
 			raw_progress = cycle if cycle <= 1.0 else 2.0 - cycle
 		_:
 			raw_progress = minf(raw_progress, 1.0)
+	if _definition.swing:
+		raw_progress = 1.0 - absf(raw_progress * 2.0 - 1.0)
 	return _ease(raw_progress)
 
 

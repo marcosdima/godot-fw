@@ -43,6 +43,12 @@ var easing := Easing.LINEAR
 ## Loop behavior after the first iteration ends. Values come from Loop.
 var loop := Loop.NONE
 
+## When true, progress travels to 1.0 at the halfway point of each iteration
+## and returns to 0.0 at its end. The value therefore always finishes exactly
+## at its base, which makes single shots (pulses, flashes) self-restoring:
+## no view-side poke is needed after the last tick.
+var swing := false
+
 ## Tracks of this animation, evaluated in order.
 var tracks: Array[Track] = []
 

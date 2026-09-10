@@ -137,6 +137,40 @@ func test_ping_pong_forward_at_quarter() -> void:
 	assert_almost_eq(playback.eased_progress(), 0.25, 0.001)
 
 
+func test_swing_peaks_at_midpoint_and_returns_to_base() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 1.0
+	definition.swing = true
+	var element: UIElement = UIElement.new(0, "element")
+	assert_almost_eq(_playback(element, definition, 0.25).eased_progress(), 0.5, 0.001)
+	assert_almost_eq(_playback(element, definition, 0.5).eased_progress(), 1.0, 0.001)
+	assert_almost_eq(_playback(element, definition, 0.75).eased_progress(), 0.5, 0.001)
+	assert_almost_eq(_playback(element, definition, 1.0).eased_progress(), 0.0, 0.001)
+
+
+func test_swing_override_ends_at_the_base_value() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 1.0
+	definition.swing = true
+	definition.add_track(&"modulate", 0.0)
+	var element: UIElement = UIElement.new(0, "element")
+	assert_eq(_playback(element, definition, 0.25).value_for(&"modulate", 1.0), 0.5)
+	assert_eq(_playback(element, definition, 0.5).value_for(&"modulate", 1.0), 0.0)
+	assert_eq(_playback(element, definition, 1.0).value_for(&"modulate", 1.0), 1.0)
+
+
+func test_swing_finishes_without_holding_the_target() -> void:
+	var definition := UIAnimationDefinition.new()
+	definition.duration = 1.0
+	definition.swing = true
+	definition.add_track(&"modulate", 0.0)
+	var element: UIElement = UIElement.new(0, "element")
+	var playback := UIAnimationPlayback.new(element, definition)
+	playback.advance(1.0)
+	assert_true(playback.is_finished())
+	assert_eq(playback.value_for(&"modulate", 1.0), 1.0)
+
+
 func test_stop_emits_stopped_and_holds_final_state() -> void:
 	var definition := UIAnimationDefinition.new()
 	definition.duration = 1.0
